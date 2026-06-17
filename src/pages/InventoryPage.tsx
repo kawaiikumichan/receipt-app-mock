@@ -4,10 +4,16 @@ import { Plus, Search, Filter } from 'lucide-react';
 
 const categoryLabels: Record<Category, string> = {
   meat: 'お肉',
+  fish: '魚介類',
   vegetable: '野菜',
+  fruit: '果物',
   dairy: '乳製品',
-  pantry: '調味料・その他',
-  daily: '日用品'
+  frozen: '冷凍食品',
+  drink: '飲料',
+  pantry: '保存食',
+  seasoning: '調味料',
+  daily: '日用品',
+  other: 'その他'
 };
 
 const InventoryPage: React.FC = () => {

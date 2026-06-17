@@ -1,4 +1,30 @@
-export type Category = 'meat' | 'vegetable' | 'dairy' | 'pantry' | 'daily';
+export type Category = 
+  | 'meat' 
+  | 'fish' 
+  | 'vegetable' 
+  | 'fruit' 
+  | 'dairy' 
+  | 'frozen' 
+  | 'drink' 
+  | 'pantry' 
+  | 'seasoning' 
+  | 'daily' 
+  | 'other';
+
+export interface ParsedItem {
+  name: string;
+  category: Category;
+  quantity: number;
+  unit: string;
+  price: number;
+  expiry_date_estimate: string;
+}
+
+export interface ParsedReceipt {
+  store_name: string;
+  purchase_date: string;
+  items: ParsedItem[];
+}
 
 export interface InventoryItem {
   id: string;
@@ -8,6 +34,7 @@ export interface InventoryItem {
   unit: string;
   expiryDate?: string;
   addedAt: string;
+  price?: number;
 }
 
 export const mockInventory: InventoryItem[] = [
