@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Image as ImageIcon, Upload, Check, Edit2, X } from 'lucide-react';
+import { Image as ImageIcon, Upload, Check, Edit2, X } from 'lucide-react';
 
 const ScannerPage: React.FC = () => {
   const [step, setStep] = useState<'camera' | 'processing' | 'confirm'>('camera');
