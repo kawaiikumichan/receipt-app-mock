@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Image as ImageIcon, Upload, Check, Edit2, X, Camera } from 'lucide-react';
+import { Image as ImageIcon, Check, Edit2, X, Camera } from 'lucide-react';
 import { type ParsedReceipt, type Category } from '../data/mockData';
 
 const categoryLabels: Record<Category, string> = {
