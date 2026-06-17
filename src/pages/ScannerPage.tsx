@@ -20,10 +20,15 @@ const ScannerPage: React.FC = () => {
   const [step, setStep] = useState<'camera' | 'processing' | 'confirm'>('camera');
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const libraryInputRef = useRef<HTMLInputElement>(null);
 
   const handleCaptureClick = () => {
-    fileInputRef.current?.click();
+    cameraInputRef.current?.click();
+  };
+
+  const handleLibraryClick = () => {
+    libraryInputRef.current?.click();
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,49 +133,49 @@ const ScannerPage: React.FC = () => {
   }
 
   return (
-    <div className="h-full bg-gray-900 flex flex-col">
-      <div className="flex-1 relative flex items-center justify-center">
-        <div className="w-64 h-80 border-2 border-white/50 rounded-2xl relative">
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary-500 rounded-tl-xl"></div>
-          <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary-500 rounded-tr-xl"></div>
-          <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-primary-500 rounded-bl-xl"></div>
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-primary-500 rounded-br-xl"></div>
-          <p className="text-white/70 text-center mt-32 text-sm">レシートを枠内に収めてください</p>
-          {error && <p className="text-red-400 text-center mt-4 text-sm font-medium">{error}</p>}
-        </div>
-      </div>
+    <div className="h-full bg-gray-50 flex flex-col p-4">
+      <header className="pt-4 pb-6 text-center">
+        <h1 className="text-2xl font-bold text-gray-900">レシート読み取り</h1>
+        <p className="text-gray-500 mt-2 text-sm">レシートを撮影するか、画像を選んでください</p>
+      </header>
 
-      <div className="bg-black/80 pb-24 pt-6 px-8 flex justify-between items-center rounded-t-3xl">
+      <div className="flex-1 flex flex-col items-center justify-center space-y-6 pb-20">
         <input 
           type="file" 
           accept="image/*" 
           className="hidden" 
-          ref={fileInputRef} 
+          ref={cameraInputRef} 
           onChange={handleFileChange}
           capture="environment"
         />
-        
-        <button className="text-white flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-1">
-            <ImageIcon size={20} />
+        <input 
+          type="file" 
+          accept="image/*" 
+          className="hidden" 
+          ref={libraryInputRef} 
+          onChange={handleFileChange}
+        />
+
+        {error && (
+          <div className="w-full bg-red-50 border border-red-100 text-red-600 p-3 rounded-xl text-sm font-medium mb-4">
+            {error}
           </div>
-          <span className="text-xs">ライブラリ</span>
-        </button>
-        
+        )}
+
         <button 
           onClick={handleCaptureClick}
-          className="w-20 h-20 rounded-full border-4 border-white flex items-center justify-center p-1 active:scale-95 transition-transform"
+          className="w-full max-w-sm bg-primary-600 hover:bg-primary-700 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center justify-center space-y-3 transition-transform active:scale-95"
         >
-          <div className="w-full h-full bg-white rounded-full flex items-center justify-center text-gray-900">
-            <Camera size={24} />
-          </div>
+          <Camera size={48} className="text-white/90" />
+          <span className="font-bold text-lg">カメラで撮影する</span>
         </button>
 
-        <button className="text-white flex flex-col items-center">
-          <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-1">
-            <Upload size={20} />
-          </div>
-          <span className="text-xs">手動入力</span>
+        <button 
+          onClick={handleLibraryClick}
+          className="w-full max-w-sm bg-white hover:bg-gray-50 text-gray-700 border-2 border-gray-200 p-6 rounded-2xl shadow-sm flex flex-col items-center justify-center space-y-3 transition-transform active:scale-95"
+        >
+          <ImageIcon size={48} className="text-gray-400" />
+          <span className="font-bold text-lg">ライブラリから選ぶ</span>
         </button>
       </div>
     </div>
