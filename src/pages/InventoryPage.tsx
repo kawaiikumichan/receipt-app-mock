@@ -3,6 +3,8 @@ import { useInventory } from '../contexts/InventoryContext';
 import { Plus, Search, Filter, ChevronDown } from 'lucide-react';
 import { type Category } from '../data/mockData';
 
+import { useNavigate } from 'react-router-dom';
+
 const categoryLabels: Record<Category, string> = {
   meat: 'お肉',
   fish: '魚介類',
@@ -19,6 +21,7 @@ const categoryLabels: Record<Category, string> = {
 
 const InventoryPage: React.FC = () => {
   const { inventory, consumeManually, updateItem } = useInventory();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'food' | 'daily'>('food');
   const [sortOption, setSortOption] = useState<'expiry' | 'added' | 'category' | 'name'>('expiry');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -156,7 +159,11 @@ const InventoryPage: React.FC = () => {
       </div>
 
       {/* Floating Action Button */}
-      <button className="fixed bottom-20 right-4 w-14 h-14 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-primary-700 active:scale-95 transition-all">
+      <button 
+        onClick={() => navigate('/scanner')}
+        className="fixed bottom-20 right-4 w-14 h-14 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-primary-700 active:scale-95 transition-all"
+        title="レシートをスキャンして追加"
+      >
         <Plus size={24} />
       </button>
     </div>
