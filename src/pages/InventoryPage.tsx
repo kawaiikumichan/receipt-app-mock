@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useInventory } from '../contexts/InventoryContext';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, ChevronDown } from 'lucide-react';
 import { type Category } from '../data/mockData';
 
 const categoryLabels: Record<Category, string> = {
@@ -20,30 +20,65 @@ const categoryLabels: Record<Category, string> = {
 const InventoryPage: React.FC = () => {
   const { inventory } = useInventory();
   const [activeTab, setActiveTab] = useState<'food' | 'daily'>('food');
+  const [sortOption, setSortOption] = useState<'expiry' | 'added' | 'category' | 'name'>('expiry');
+  const [isSortOpen, setIsSortOpen] = useState(false);
 
-  const filteredInventory = inventory.filter(item => 
-    activeTab === 'food' ? item.category !== 'daily' : item.category === 'daily'
-  );
+  const filteredInventory = useMemo(() => {
+    let items = inventory.filter(item => 
+      activeTab === 'food' ? item.category !== 'daily' : item.category === 'daily'
+    );
+
+    return items.sort((a, b) => {
+      if (sortOption === 'added') {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      } else if (sortOption === 'category') {
+        return a.category.localeCompare(b.category);
+      } else if (sortOption === 'name') {
+        return a.name.localeCompare(b.name);
+      } else {
+        // expiry (default)
+        const dateA = a.actualExpiryDate || a.estimatedExpiryDate;
+        const dateB = b.actualExpiryDate || b.estimatedExpiryDate;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return new Date(dateA).getTime() - new Date(dateB).getTime();
+      }
+    });
+  }, [inventory, activeTab, sortOption]);
 
   return (
     <div className="p-4 h-full flex flex-col">
       <header className="pt-4 pb-4">
         <h1 className="text-2xl font-bold text-gray-900 mb-4">在庫管理</h1>
         
-        {/* Search Bar */}
-        <div className="relative mb-4">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={18} className="text-gray-400" />
+        {/* Search Bar & Sort */}
+        <div className="flex space-x-2 mb-4">
+          <div className="relative flex-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={18} className="text-gray-400" />
+            </div>
+            <input 
+              type="text" 
+              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm shadow-sm" 
+              placeholder="検索..." 
+            />
           </div>
-          <input 
-            type="text" 
-            className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm shadow-sm" 
-            placeholder="食材・日用品を検索..." 
-          />
-          <div className="absolute inset-y-0 right-0 pr-2 flex items-center">
-            <button className="p-1 text-gray-400 hover:text-gray-600">
-              <Filter size={18} />
+          <div className="relative">
+            <button 
+              onClick={() => setIsSortOpen(!isSortOpen)}
+              className="flex items-center space-x-1 px-3 py-2 border border-gray-200 bg-white rounded-xl text-gray-600 text-sm shadow-sm hover:bg-gray-50"
+            >
+              <Filter size={16} />
+              <ChevronDown size={14} />
             </button>
+            {isSortOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 z-10 overflow-hidden">
+                <button onClick={() => { setSortOption('expiry'); setIsSortOpen(false); }} className={`block w-full text-left px-4 py-3 text-sm ${sortOption === 'expiry' ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}>賞味期限が近い順</button>
+                <button onClick={() => { setSortOption('added'); setIsSortOpen(false); }} className={`block w-full text-left px-4 py-3 text-sm ${sortOption === 'added' ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}>登録日が新しい順</button>
+                <button onClick={() => { setSortOption('category'); setIsSortOpen(false); }} className={`block w-full text-left px-4 py-3 text-sm ${sortOption === 'category' ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}>カテゴリ順</button>
+                <button onClick={() => { setSortOption('name'); setIsSortOpen(false); }} className={`block w-full text-left px-4 py-3 text-sm ${sortOption === 'name' ? 'bg-primary-50 text-primary-700 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}>名前順</button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -79,7 +114,7 @@ const InventoryPage: React.FC = () => {
                 在庫: {item.quantity}{item.unit}
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">
+                <span className={`font-medium ${item.expiryStatus === 'expired' ? 'text-red-600' : item.expiryStatus === 'urgent' || item.expiryStatus === 'warning' ? 'text-orange-600' : 'text-gray-500'}`}>
                   {item.actualExpiryDate || item.estimatedExpiryDate ? `期限: ${item.actualExpiryDate || item.estimatedExpiryDate}` : ''}
                 </span>
                 <div className="flex gap-2">

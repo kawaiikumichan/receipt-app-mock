@@ -1,14 +1,16 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { mockInventory } from '../data/mockData';
 import type { InventoryItem } from '../data/mockData';
+import { getExpiryStatus } from '../utils/expiry';
 
 interface InventoryContextType {
   inventory: InventoryItem[];
-  addItems: (items: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>[]) => void;
+  addItems: (items: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'expiryStatus'>[]) => void;
   updateItem: (id: string, updates: Partial<InventoryItem>) => void;
   consumeItem: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
+  getUrgentItems: () => InventoryItem[];
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -41,7 +43,14 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     }
   }, [inventory, isLoaded]);
 
-  const addItems = (newItems: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>[]) => {
+  const computedInventory = useMemo(() => {
+    return inventory.map(item => ({
+      ...item,
+      expiryStatus: getExpiryStatus(item.actualExpiryDate || item.estimatedExpiryDate)
+    }));
+  }, [inventory]);
+
+  const addItems = (newItems: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'expiryStatus'>[]) => {
     const now = new Date().toISOString();
     const itemsWithIds: InventoryItem[] = newItems.map(item => ({
       ...item,
@@ -60,8 +69,6 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     ));
   };
 
-  // Consume logic: Reduces quantity, does not fully remove unless intended.
-  // We can track consumed items in the future by adding them to a consumed log.
   const consumeItem = (id: string, quantityToConsume: number) => {
     setInventory(prev => prev.map(item => {
       if (item.id === id) {
@@ -76,10 +83,23 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     setInventory(prev => prev.filter(item => item.id !== id));
   };
 
+  const getUrgentItems = () => {
+    return computedInventory.filter(item => 
+      item.expiryStatus === 'urgent' || item.expiryStatus === 'warning' || item.expiryStatus === 'expired'
+    );
+  };
+
   if (!isLoaded) return null; // Avoid hydration mismatch or empty flashes
 
   return (
-    <InventoryContext.Provider value={{ inventory, addItems, updateItem, consumeItem, removeItem }}>
+    <InventoryContext.Provider value={{ 
+      inventory: computedInventory, 
+      addItems, 
+      updateItem, 
+      consumeItem, 
+      removeItem,
+      getUrgentItems
+    }}>
       {children}
     </InventoryContext.Provider>
   );

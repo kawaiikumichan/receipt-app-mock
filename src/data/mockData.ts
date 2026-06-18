@@ -27,6 +27,7 @@ export interface ParsedReceipt {
 }
 
 export type StorageType = 'refrigerated' | 'frozen' | 'room';
+export type ExpiryStatus = 'expired' | 'urgent' | 'warning' | 'safe';
 
 export interface InventoryItem {
   id: string;
@@ -41,6 +42,7 @@ export interface InventoryItem {
   price: number;
   createdAt: string;
   updatedAt: string;
+  expiryStatus?: ExpiryStatus;
 }
 
 export const mockInventory: InventoryItem[] = [
