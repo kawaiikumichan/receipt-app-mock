@@ -45,6 +45,8 @@ export interface InventoryItem {
   createdAt: string;
   updatedAt: string;
   expiryStatus?: ExpiryStatus;
+  opened: boolean;
+  openedAt: string | null;
 }
 
 export interface RecipeIngredient {
@@ -93,32 +95,38 @@ export const mockInventory: InventoryItem[] = [
   { 
     id: '1', name: '豚バラ肉', ingredientKey: '豚肉', category: 'meat', quantity: 300, unit: 'g', price: 580,
     purchaseDate: '2026-06-15', estimatedExpiryDate: '2026-06-20', actualExpiryDate: '', storageType: 'refrigerated',
-    createdAt: '2026-06-15T10:00:00Z', updatedAt: '2026-06-15T10:00:00Z'
+    createdAt: '2026-06-15T10:00:00Z', updatedAt: '2026-06-15T10:00:00Z',
+    opened: false, openedAt: null
   },
   { 
     id: '2', name: 'キャベツ', ingredientKey: 'キャベツ', category: 'vegetable', quantity: 0.5, unit: '玉', price: 150,
     purchaseDate: '2026-06-15', estimatedExpiryDate: '2026-06-25', actualExpiryDate: '', storageType: 'refrigerated',
-    createdAt: '2026-06-15T10:00:00Z', updatedAt: '2026-06-15T10:00:00Z'
+    createdAt: '2026-06-15T10:00:00Z', updatedAt: '2026-06-15T10:00:00Z',
+    opened: false, openedAt: null
   },
   { 
     id: '3', name: '卵', ingredientKey: '卵', category: 'dairy', quantity: 6, unit: '個', price: 220,
     purchaseDate: '2026-06-14', estimatedExpiryDate: '2026-06-28', actualExpiryDate: '', storageType: 'refrigerated',
-    createdAt: '2026-06-14T15:30:00Z', updatedAt: '2026-06-14T15:30:00Z'
+    createdAt: '2026-06-14T15:30:00Z', updatedAt: '2026-06-14T15:30:00Z',
+    opened: false, openedAt: null
   },
   { 
     id: '4', name: '牛乳', ingredientKey: '牛乳', category: 'dairy', quantity: 1, unit: '本', price: 198,
     purchaseDate: '2026-06-12', estimatedExpiryDate: '2026-06-19', actualExpiryDate: '', storageType: 'refrigerated',
-    createdAt: '2026-06-12T18:45:00Z', updatedAt: '2026-06-12T18:45:00Z'
+    createdAt: '2026-06-12T18:45:00Z', updatedAt: '2026-06-12T18:45:00Z',
+    opened: false, openedAt: null
   },
   { 
     id: '5', name: '玉ねぎ', ingredientKey: '玉ねぎ', category: 'vegetable', quantity: 3, unit: '個', price: 100,
     purchaseDate: '2026-06-10', estimatedExpiryDate: '2026-07-10', actualExpiryDate: '', storageType: 'room',
-    createdAt: '2026-06-10T12:00:00Z', updatedAt: '2026-06-10T12:00:00Z'
+    createdAt: '2026-06-10T12:00:00Z', updatedAt: '2026-06-10T12:00:00Z',
+    opened: false, openedAt: null
   },
   { 
     id: '6', name: 'トイレットペーパー', ingredientKey: 'トイレットペーパー', category: 'daily', quantity: 4, unit: 'ロール', price: 400,
     purchaseDate: '2026-06-01', estimatedExpiryDate: '', actualExpiryDate: '', storageType: 'room',
-    createdAt: '2026-06-01T09:15:00Z', updatedAt: '2026-06-01T09:15:00Z'
+    createdAt: '2026-06-01T09:15:00Z', updatedAt: '2026-06-01T09:15:00Z',
+    opened: false, openedAt: null
   }
 ];
 

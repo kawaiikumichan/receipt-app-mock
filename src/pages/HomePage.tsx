@@ -39,11 +39,11 @@ const HomePage: React.FC = () => {
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-red-50 p-3 rounded-2xl border border-red-100 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-red-700">{expiredCount}</span>
-            <span className="text-xs text-red-600 mt-1 font-medium text-center">期限切れ</span>
+            <span className="text-xs text-red-600 mt-1 font-medium text-center">期限目安越え</span>
           </div>
           <div className="bg-orange-50 p-3 rounded-2xl border border-orange-100 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-orange-700">{warningCount}</span>
-            <span className="text-xs text-orange-600 mt-1 font-medium text-center">要消費(3日内)</span>
+            <span className="text-xs text-orange-600 mt-1 font-medium text-center">早めに</span>
           </div>
           <div className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
             <span className="text-2xl font-bold text-gray-900">{totalCount}</span>

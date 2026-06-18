@@ -21,7 +21,7 @@ const categoryLabels: Record<Category, string> = {
 const ScannerPage: React.FC = () => {
   const [step, setStep] = useState<'camera' | 'processing' | 'confirm'>('camera');
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(null);
-  const [editableItems, setEditableItems] = useState<Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>[]>([]);
+  const [editableItems, setEditableItems] = useState<Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'expiryStatus' | 'opened' | 'openedAt'>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
@@ -227,13 +227,20 @@ const ScannerPage: React.FC = () => {
 
                 <div className="flex gap-2 text-sm">
                   <div className="flex-1">
-                    <label className="block text-xs text-gray-500 mb-1">推定賞味期限</label>
+                    <label className={`block text-xs font-medium mb-1 ${(['meat', 'fish', 'dairy'].includes(item.category) || ['豆腐', '麺', '惣菜'].some(k => item.name.includes(k))) ? 'text-orange-600' : 'text-gray-500'}`}>
+                      {(['meat', 'fish', 'dairy'].includes(item.category) || ['豆腐', '麺', '惣菜'].some(k => item.name.includes(k))) ? '推定期限 (確認推奨)' : '推定期限'}
+                    </label>
                     <input 
                       type="date" 
                       value={item.estimatedExpiryDate} 
                       onChange={e => handleItemChange(index, 'estimatedExpiryDate', e.target.value)}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary-500"
+                      className={`w-full bg-gray-50 border rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary-500 ${(['meat', 'fish', 'dairy'].includes(item.category) || ['豆腐', '麺', '惣菜'].some(k => item.name.includes(k))) ? 'border-orange-200 bg-orange-50/30' : 'border-gray-200'}`}
                     />
+                    {(['meat', 'fish', 'dairy'].includes(item.category) || ['豆腐', '麺', '惣菜'].some(k => item.name.includes(k))) && (
+                      <p className="text-[10px] text-orange-600 mt-1">
+                        ※推定値です。必要に応じて正確な日付に修正してください。
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

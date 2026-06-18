@@ -8,7 +8,7 @@ interface InventoryContextType {
   inventory: InventoryItem[];
   consumptions: InventoryConsumption[];
   mealRecords: MealRecord[];
-  addItems: (items: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'expiryStatus'>[]) => void;
+  addItems: (items: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'expiryStatus' | 'opened' | 'openedAt'>[]) => void;
   updateItem: (id: string, updates: Partial<InventoryItem>) => void;
   consumeManually: (id: string, quantity: number) => void;
   recordMealAndConsume: (recipe: Recipe, actualServings: number) => void;
@@ -60,13 +60,15 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     }));
   }, [inventory]);
 
-  const addItems = (newItems: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'expiryStatus'>[]) => {
+  const addItems = (newItems: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'expiryStatus' | 'opened' | 'openedAt'>[]) => {
     const now = new Date().toISOString();
     const itemsWithIds: InventoryItem[] = newItems.map(item => ({
       ...item,
       id: crypto.randomUUID(),
       createdAt: now,
       updatedAt: now,
+      opened: false,
+      openedAt: null
     }));
     setInventory(prev => [...prev, ...itemsWithIds]);
   };

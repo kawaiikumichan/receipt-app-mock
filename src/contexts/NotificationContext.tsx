@@ -66,11 +66,11 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 
         let message = '';
         if (item.expiryStatus === 'expired') {
-          message = `${item.name}の賞味期限が切れています！`;
+          message = `${item.name}の期限目安を過ぎています。状態を確認の上、早めのご利用をおすすめします。`;
         } else if (item.expiryStatus === 'urgent') {
-          message = `${item.name}の賞味期限が明日までです。`;
+          message = `${item.name}の期限目安が明日までです。お早めのご利用をおすすめします。`;
         } else if (item.expiryStatus === 'warning') {
-          message = `${item.name}の賞味期限が近づいています（残り3日以内）。`;
+          message = `${item.name}の期限目安が近づいています（残り3日以内）。`;
         }
 
         changed = true;
