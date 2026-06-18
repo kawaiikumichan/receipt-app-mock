@@ -1,9 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useInventory } from '../contexts/InventoryContext';
-import { Plus, Search, Filter, ChevronDown } from 'lucide-react';
-import { type Category } from '../data/mockData';
-
-import { useNavigate } from 'react-router-dom';
+import { Plus, Search, Filter, ChevronDown, X } from 'lucide-react';
+import { type Category, type StorageType } from '../data/mockData';
 
 const categoryLabels: Record<Category, string> = {
   meat: 'お肉',
@@ -20,11 +18,22 @@ const categoryLabels: Record<Category, string> = {
 };
 
 const InventoryPage: React.FC = () => {
-  const { inventory, consumeManually, updateItem } = useInventory();
-  const navigate = useNavigate();
+  const { inventory, consumeManually, updateItem, addItems } = useInventory();
   const [activeTab, setActiveTab] = useState<'food' | 'daily'>('food');
   const [sortOption, setSortOption] = useState<'expiry' | 'added' | 'category' | 'name'>('expiry');
   const [isSortOpen, setIsSortOpen] = useState(false);
+  const [isManualAddOpen, setIsManualAddOpen] = useState(false);
+  const [manualItem, setManualItem] = useState({
+    name: '',
+    ingredientKey: '',
+    category: 'vegetable' as Category,
+    quantity: 1,
+    unit: '個',
+    price: 0,
+    storageType: 'refrigerated' as StorageType,
+    estimatedExpiryDate: '',
+    actualExpiryDate: ''
+  });
 
   const filteredInventory = useMemo(() => {
     let items = inventory.filter(item => 
@@ -160,12 +169,85 @@ const InventoryPage: React.FC = () => {
 
       {/* Floating Action Button */}
       <button 
-        onClick={() => navigate('/scanner')}
+        onClick={() => setIsManualAddOpen(true)}
         className="fixed bottom-20 right-4 w-14 h-14 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-primary-700 active:scale-95 transition-all"
-        title="レシートをスキャンして追加"
+        title="手動で追加"
       >
         <Plus size={24} />
       </button>
+
+      {/* Manual Add Modal */}
+      {isManualAddOpen && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
+            <header className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h2 className="font-bold text-gray-900">手動で食材を追加</h2>
+              <button onClick={() => setIsManualAddOpen(false)} className="text-gray-500 hover:text-gray-700 p-1">
+                <X size={20} />
+              </button>
+            </header>
+            
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">商品名</label>
+                <input type="text" value={manualItem.name} onChange={e => setManualItem({...manualItem, name: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500" placeholder="例: キャベツ" />
+              </div>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">カテゴリ</label>
+                  <select value={manualItem.category} onChange={e => setManualItem({...manualItem, category: e.target.value as Category})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500">
+                    {Object.entries(categoryLabels).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 mb-1">保存場所</label>
+                  <select value={manualItem.storageType} onChange={e => setManualItem({...manualItem, storageType: e.target.value as StorageType})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500">
+                    <option value="refrigerated">冷蔵</option>
+                    <option value="frozen">冷凍</option>
+                    <option value="room">常温</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <div className="w-1/2">
+                  <label className="block text-xs text-gray-500 mb-1">数量</label>
+                  <input type="number" step="0.1" value={manualItem.quantity} onChange={e => setManualItem({...manualItem, quantity: parseFloat(e.target.value) || 0})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500" />
+                </div>
+                <div className="w-1/2">
+                  <label className="block text-xs text-gray-500 mb-1">単位</label>
+                  <input type="text" value={manualItem.unit} onChange={e => setManualItem({...manualItem, unit: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500" placeholder="個, g, 本 etc" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">期限 (任意)</label>
+                <input type="date" value={manualItem.estimatedExpiryDate} onChange={e => setManualItem({...manualItem, estimatedExpiryDate: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500" />
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-100 bg-gray-50">
+              <button 
+                onClick={() => {
+                  if (!manualItem.name) return alert('商品名を入力してください');
+                  addItems([
+                    {
+                      ...manualItem,
+                      ingredientKey: manualItem.name, // Simplified for manual add
+                      purchaseDate: new Date().toISOString().split('T')[0]
+                    }
+                  ]);
+                  setIsManualAddOpen(false);
+                  setManualItem({ name: '', ingredientKey: '', category: 'vegetable', quantity: 1, unit: '個', price: 0, storageType: 'refrigerated', estimatedExpiryDate: '', actualExpiryDate: '' });
+                }}
+                className="w-full bg-primary-600 text-white font-bold py-3 rounded-xl hover:bg-primary-700 active:scale-95 transition-transform"
+              >
+                登録する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
