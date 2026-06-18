@@ -18,7 +18,7 @@ const categoryLabels: Record<Category, string> = {
 };
 
 const InventoryPage: React.FC = () => {
-  const { inventory, updateItem, removeItem, consumeItem } = useInventory();
+  const { inventory, removeItem, consumeManually } = useInventory();
   const [activeTab, setActiveTab] = useState<'food' | 'daily'>('food');
   const [sortOption, setSortOption] = useState<'expiry' | 'added' | 'category' | 'name'>('expiry');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -120,39 +120,26 @@ const InventoryPage: React.FC = () => {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => {
-                      consumeItem(item.id, 1);
-                      if (item.quantity <= 1 && window.confirm(`${item.name} を全て消費しましたか？（在庫から削除されます）`)) {
-                        removeItem(item.id);
+                      const input = window.prompt(`「${item.name}」をどれくらい消費しますか？ (単位: ${item.unit})\n現在の在庫: ${item.quantity}${item.unit}`);
+                      if (input !== null) {
+                        const num = parseFloat(input);
+                        if (!isNaN(num) && num > 0) {
+                          consumeManually(item.id, num);
+                          if (item.quantity - num <= 0 && window.confirm(`在庫が0になりました。「${item.name}」をリストから削除しますか？`)) {
+                            removeItem(item.id);
+                          }
+                        }
                       }
                     }}
                     className="text-primary-600 hover:text-primary-700 bg-primary-50 px-3 py-1 rounded-full font-medium"
                   >
-                    消費
+                    手動消費
                   </button>
                 </div>
               </div>
             </div>
             <div className="flex space-x-2">
-              <button 
-                onClick={() => {
-                  if (item.quantity > 1) {
-                    updateItem(item.id, { quantity: item.quantity - 1 });
-                  } else {
-                    if (window.confirm(`${item.name} を削除しますか？`)) {
-                      removeItem(item.id);
-                    }
-                  }
-                }}
-                className="w-8 h-8 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-95 transition-transform"
-              >
-                -
-              </button>
-              <button 
-                onClick={() => updateItem(item.id, { quantity: item.quantity + 1 })}
-                className="w-8 h-8 rounded-full bg-primary-50 border border-primary-100 flex items-center justify-center text-primary-600 hover:bg-primary-100 active:scale-95 transition-transform"
-              >
-                +
-              </button>
+              {/* Optional: We can keep +/- for quick +1/-1 adjustments, or just remove them as requested to simplify */}
             </div>
           </div>
         ))}

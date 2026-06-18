@@ -102,6 +102,7 @@ const ScannerPage: React.FC = () => {
       const today = new Date().toISOString().split('T')[0];
       const itemsForEdit = data.items.map(item => ({
         name: item.name,
+        ingredientKey: item.ingredientKey || item.name,
         category: item.category as Category,
         quantity: item.quantity,
         unit: item.unit || '個',
@@ -164,12 +165,22 @@ const ScannerPage: React.FC = () => {
             {editableItems.map((item, index) => (
               <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <input 
-                    type="text" 
-                    value={item.name} 
-                    onChange={e => handleItemChange(index, 'name', e.target.value)}
-                    className="font-semibold text-gray-900 border-b border-gray-200 focus:border-primary-500 focus:outline-none w-1/2 pb-1"
-                  />
+                  <div className="flex-1 mr-2">
+                    <input 
+                      type="text" 
+                      value={item.name} 
+                      onChange={e => handleItemChange(index, 'name', e.target.value)}
+                      className="font-semibold text-gray-900 border-b border-gray-200 focus:border-primary-500 focus:outline-none w-full pb-1"
+                      placeholder="商品名"
+                    />
+                    <input 
+                      type="text" 
+                      value={item.ingredientKey || ''} 
+                      onChange={e => handleItemChange(index, 'ingredientKey', e.target.value)}
+                      className="text-xs text-gray-500 border-b border-gray-200 focus:border-primary-500 focus:outline-none w-full mt-1"
+                      placeholder="検索キー (例: 玉ねぎ)"
+                    />
+                  </div>
                   <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-1 shrink-0">
                     <button 
                       onClick={() => handleItemChange(index, 'quantity', Math.max(0, item.quantity - 1))}
