@@ -18,7 +18,7 @@ const categoryLabels: Record<Category, string> = {
 };
 
 const InventoryPage: React.FC = () => {
-  const { inventory, consumeManually } = useInventory();
+  const { inventory, consumeManually, updateItem } = useInventory();
   const [activeTab, setActiveTab] = useState<'food' | 'daily'>('food');
   const [sortOption, setSortOption] = useState<'expiry' | 'added' | 'category' | 'name'>('expiry');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -128,15 +128,28 @@ const InventoryPage: React.FC = () => {
                         }
                       }
                     }}
-                    className="text-primary-600 hover:text-primary-700 bg-primary-50 px-3 py-1 rounded-full font-medium"
+                    className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-95 transition-transform"
+                    title="消費する"
                   >
-                    手動消費
+                    -
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const input = window.prompt(`「${item.name}」をどれくらい追加しますか？ (単位: ${item.unit})\n現在の在庫: ${item.quantity}${item.unit}`);
+                      if (input !== null) {
+                        const num = parseFloat(input);
+                        if (!isNaN(num) && num > 0) {
+                          updateItem(item.id, { quantity: item.quantity + num });
+                        }
+                      }
+                    }}
+                    className="w-10 h-10 rounded-full bg-primary-50 border border-primary-100 flex items-center justify-center text-primary-600 hover:bg-primary-100 active:scale-95 transition-transform"
+                    title="追加する"
+                  >
+                    +
                   </button>
                 </div>
               </div>
-            </div>
-            <div className="flex space-x-2">
-              {/* Optional: We can keep +/- for quick +1/-1 adjustments, or just remove them as requested to simplify */}
             </div>
           </div>
         ))}
