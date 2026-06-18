@@ -111,19 +111,31 @@ const HomePage: React.FC = () => {
               <X size={20} />
             </button>
           </header>
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {notifications.length === 0 ? (
-              <div className="text-center text-gray-500 mt-10">お知らせはありません</div>
-            ) : (
-              <>
-                <div className="flex justify-end mb-2">
-                  <button onClick={markAllAsRead} className="text-sm text-primary-600 hover:text-primary-700 font-medium">すべて既読にする</button>
-                </div>
-                {notifications.map(n => (
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex justify-between items-end mb-4">
+              <h3 className="font-bold text-gray-700">要対応</h3>
+              {notifications.some(n => n.status === 'active' && !n.read) && (
+                <button onClick={markAllAsRead} className="text-xs text-primary-600 hover:text-primary-700 font-medium">すべて既読にする</button>
+              )}
+            </div>
+            <div className="space-y-3 mb-8">
+              {notifications.filter(n => n.status === 'active').length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">要対応のお知らせはありません</p>
+              ) : (
+                notifications.filter(n => n.status === 'active').map(n => (
                   <div 
                     key={n.id} 
-                    onClick={() => markAsRead(n.id)}
-                    className={`p-4 rounded-xl border transition-colors ${n.read ? 'bg-white border-gray-100' : 'bg-blue-50 border-blue-100 cursor-pointer'}`}
+                    onClick={() => {
+                      markAsRead(n.id);
+                      if (n.relatedType === 'inventory') {
+                        setShowNotifications(false);
+                        navigate('/inventory');
+                      } else if (n.relatedType === 'shopping') {
+                        setShowNotifications(false);
+                        navigate('/shopping-list');
+                      }
+                    }}
+                    className={`p-4 rounded-xl border transition-colors cursor-pointer ${n.read ? 'bg-white border-gray-200' : 'bg-blue-50 border-blue-200 shadow-sm'}`}
                   >
                     <div className="flex justify-between items-start mb-1">
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${n.severity === 'expired' ? 'bg-red-100 text-red-700' : n.severity === 'urgent' || n.severity === 'warning' ? 'bg-orange-100 text-orange-700' : 'bg-gray-200 text-gray-700'}`}>
@@ -131,11 +143,34 @@ const HomePage: React.FC = () => {
                       </span>
                       <span className="text-xs text-gray-400">{new Date(n.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <p className={`text-sm ${n.read ? 'text-gray-600' : 'text-gray-900 font-medium'}`}>{n.message}</p>
+                    {n.title && <p className={`text-sm mb-1 ${n.read ? 'text-gray-700 font-semibold' : 'text-gray-900 font-bold'}`}>{n.title}</p>}
+                    <p className={`text-xs ${n.read ? 'text-gray-500' : 'text-gray-700 font-medium'}`}>{n.message}</p>
                   </div>
-                ))}
-              </>
-            )}
+                ))
+              )}
+            </div>
+
+            <h3 className="font-bold text-gray-500 mb-4 border-t pt-4">過去のお知らせ</h3>
+            <div className="space-y-3 pb-8 opacity-75">
+              {notifications.filter(n => n.status === 'resolved' || n.status === 'archived').length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">過去のお知らせはありません</p>
+              ) : (
+                notifications.filter(n => n.status === 'resolved' || n.status === 'archived').map(n => (
+                  <div key={n.id} className="p-4 rounded-xl border bg-gray-50 border-gray-100">
+                    <div className="flex justify-between items-start mb-1">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-600">
+                        {n.status === 'resolved' ? '解決済み' : 'アーカイブ'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {n.resolvedAt ? new Date(n.resolvedAt).toLocaleDateString() : new Date(n.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {n.title && <p className="text-sm font-semibold text-gray-600 mb-1">{n.title}</p>}
+                    <p className="text-xs text-gray-500">{n.message}</p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       )}
