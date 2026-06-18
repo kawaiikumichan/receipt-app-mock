@@ -88,7 +88,7 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
         return { ...item, quantity: newQuantity, updatedAt: new Date().toISOString() };
       }
       return item;
-    }));
+    }).filter(item => item.quantity > 0));
     
     setConsumptions(prev => [...prev, {
       id: crypto.randomUUID(),
@@ -150,7 +150,7 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
           
           nextInventory = nextInventory.map(item => 
             item.id === target.id ? { ...item, quantity: item.quantity - actualConsumed } : item
-          );
+          ).filter(item => item.quantity > 0);
 
           newConsumptions.push({
             id: crypto.randomUUID(),

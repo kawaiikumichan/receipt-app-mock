@@ -125,9 +125,6 @@ const InventoryPage: React.FC = () => {
                         const num = parseFloat(input);
                         if (!isNaN(num) && num > 0) {
                           consumeManually(item.id, num);
-                          if (item.quantity - num <= 0 && window.confirm(`在庫が0になりました。「${item.name}」をリストから削除しますか？`)) {
-                            removeItem(item.id);
-                          }
                         }
                       }
                     }}
