@@ -5,7 +5,7 @@ import { useShoppingList } from '../contexts/ShoppingListContext';
 import { type Recipe } from '../data/mockData';
 
 const RecipesPage: React.FC = () => {
-  const { inventory, getUrgentItems, recordMealAndConsume } = useInventory();
+  const { inventory, getUrgentItems, getRescueItems, recordMealAndConsume } = useInventory();
   const { addItems: addShoppingItems } = useShoppingList();
   
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -21,12 +21,14 @@ const RecipesPage: React.FC = () => {
     setError(null);
     try {
       const urgentItems = getUrgentItems();
+      const rescueItems = getRescueItems();
       const res = await fetch('/api/suggest-recipes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           inventory,
           urgentItems,
+          rescueItems,
           settings: { familySize, maxCookingTime, planDays: 1 }
         })
       });
@@ -109,6 +111,19 @@ const RecipesPage: React.FC = () => {
                 </span>
               </div>
               
+              {recipe.recommendationReasons && recipe.recommendationReasons.length > 0 && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {recipe.recommendationReasons.map(r => {
+                    if (r === 'urgent') return <span key={r} className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-50 text-red-600 border border-red-100">期限間近をレスキュー</span>;
+                    if (r === 'rescue') return <span key={r} className="text-[10px] font-bold px-2 py-0.5 rounded bg-orange-50 text-orange-600 border border-orange-100">余りがち食材を消費</span>;
+                    if (r === 'high_utilization') return <span key={r} className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-100">在庫をたっぷり活用</span>;
+                    if (r === 'quick') return <span key={r} className="text-[10px] font-bold px-2 py-0.5 rounded bg-green-50 text-green-600 border border-green-100">時短でサクッと</span>;
+                    if (r === 'less_shopping') return <span key={r} className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-600 border border-purple-100">買い足し最小限</span>;
+                    return null;
+                  })}
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2 text-xs text-gray-600 mb-3">
                 <div className="flex items-center bg-gray-50 px-2 py-1 rounded">
                   <Clock size={12} className="mr-1" />
@@ -118,9 +133,6 @@ const RecipesPage: React.FC = () => {
                   <Utensils size={12} className="mr-1" />
                   <span>{recipe.baseServings}人前</span>
                 </div>
-                <div className="bg-gray-50 px-2 py-1 rounded text-green-700">ロス削減: {recipe.wasteReductionScore}点</div>
-                <div className="bg-gray-50 px-2 py-1 rounded text-blue-700">在庫活用: {recipe.inventoryUsageScore}点</div>
-                <div className="bg-gray-50 px-2 py-1 rounded text-orange-700">要買足し: {recipe.shoppingNeedScore}点</div>
               </div>
 
               <div className="bg-blue-50/50 p-3 rounded-lg text-sm text-gray-700 mb-4 border border-blue-100">

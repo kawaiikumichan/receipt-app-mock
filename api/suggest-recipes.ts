@@ -9,7 +9,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { inventory, urgentItems, settings } = req.body;
+    const { inventory, urgentItems, rescueItems, settings } = req.body;
 
     if (!inventory) {
       return res.status(400).json({ error: 'Missing inventory in request body' });
@@ -28,6 +28,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? urgentItems.map((i: any) => `- ${i.name} (Key: ${i.ingredientKey || i.name})`).join('\n')
       : '特になし';
 
+    const rescueList = rescueItems && rescueItems.length > 0
+      ? rescueItems.map((i: any) => `- ${i.name} (Key: ${i.ingredientKey || i.name})`).join('\n')
+      : '特になし';
+
     const prompt = `
 あなたはプロの献立提案AIです。
 ユーザーの現在の食材在庫と設定に基づいて、最適なレシピを提案してください。
@@ -43,12 +47,16 @@ ${inventoryList || '在庫なし'}
 【優先して消費すべき食材 (賞味期限間近)】
 ${urgentList}
 
+【レスキュー対象食材 (よく余らせてしまう食材)】
+${rescueList}
+
 【AIへの最優先事項 (以下の順序で遵守すること)】
 1. 賞味期限が近い食材（上記優先食材）を消費すること
-2. 在庫活用率を最大化すること
-3. 買い足し量（missingIngredients）を最小化すること
-4. 設定された調理時間内に収めること
-5. 栄養バランスを考慮すること
+2. レスキュー対象食材が含まれている場合は、それらを美味しく消費できる献立を優先提案すること
+3. 在庫活用率を最大化すること
+4. 買い足し量（missingIngredients）を最小化すること
+5. 設定された調理時間内に収めること
+6. 栄養バランスを考慮すること
 
 【レシピ生成とレシピ管理の分離ルール】
 詳細な調理手順は出力しないでください。レシピ名、調理時間、提案理由、材料リスト（在庫と買い足しで分離）、およびスコアのみを出力してください。
@@ -68,6 +76,7 @@ ${urgentList}
     "inventoryUsageScore": 在庫活用率スコア(0-100),
     "shoppingNeedScore": 買い足し必要度スコア(0-100, 少ない方が高スコアでも可だが、一貫させること),
     "reason": "なぜこのレシピを提案したかの理由 (例: 賞味期限が近い玉ねぎを消費しつつ...)",
+    "recommendationReasons": ["urgent", "high_utilization", "quick", "less_shopping"], // 当てはまるものを配列で出力 ('urgent', 'rescue', 'high_utilization', 'quick', 'less_shopping' のいずれか)
     "baseServings": ${familySize},
     "availableIngredients": [
       {

@@ -68,6 +68,7 @@ export interface Recipe {
   inventoryUsageScore: number;
   shoppingNeedScore: number;
   reason: string;
+  recommendationReasons?: ('urgent' | 'rescue' | 'high_utilization' | 'quick' | 'less_shopping')[];
   baseServings: number;
   availableIngredients: RecipeIngredient[];
   missingIngredients: RecipeIngredient[];

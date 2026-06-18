@@ -15,6 +15,7 @@ interface InventoryContextType {
   recordMealAndConsume: (recipe: Recipe, actualServings: number) => void;
   removeItem: (id: string) => void;
   getUrgentItems: () => InventoryItem[];
+  getRescueItems: () => InventoryItem[];
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -197,6 +198,20 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     );
   };
 
+  const getRescueItems = () => {
+    // Determine frequently wasted items (e.g. more than 1 waste in history)
+    const wasteCounts: Record<string, number> = {};
+    consumptions.filter(c => c.action === 'wasted').forEach(c => {
+      wasteCounts[c.ingredientKey] = (wasteCounts[c.ingredientKey] || 0) + 1;
+    });
+    
+    // Return items currently in inventory that match these high-waste keys
+    return computedInventory.filter(item => {
+      const key = item.ingredientKey || item.name;
+      return (wasteCounts[key] || 0) >= 1;
+    });
+  };
+
   if (!isLoaded) return null; // Avoid hydration mismatch or empty flashes
 
   return (
@@ -210,7 +225,8 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
       consumeOrWasteItem, 
       recordMealAndConsume,
       removeItem,
-      getUrgentItems
+      getUrgentItems,
+      getRescueItems
     }}>
       {children}
     </InventoryContext.Provider>

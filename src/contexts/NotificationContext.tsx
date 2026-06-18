@@ -32,7 +32,7 @@ const STORAGE_KEY = 'receipt_app_notifications';
 export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  const { inventory } = useInventory();
+  const { inventory, consumptions } = useInventory();
 
   // Load from local storage
   useEffect(() => {
@@ -145,6 +145,68 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       return changed ? next : prev;
     });
   }, [inventory, isLoaded]);
+
+  // Auto-generate stockout predictions (Step 8)
+  useEffect(() => {
+    if (!isLoaded || inventory.length === 0 || consumptions.length === 0) return;
+
+    // 1. Calculate avg consumption days for each ingredientKey
+    const itemDays: Record<string, number[]> = {};
+    consumptions.filter(c => c.action === 'consumed' && c.inventoryItemId).forEach(c => {
+      const invItem = inventory.find(i => i.id === c.inventoryItemId);
+      if (invItem) {
+        const days = (new Date(c.createdAt).getTime() - new Date(invItem.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+        if (days > 0) {
+          if (!itemDays[c.ingredientKey]) itemDays[c.ingredientKey] = [];
+          itemDays[c.ingredientKey].push(days);
+        }
+      }
+    });
+
+    const avgDaysDict: Record<string, number> = {};
+    for (const [key, daysArray] of Object.entries(itemDays)) {
+      if (daysArray.length >= 1) { // Require at least 1 record for prediction
+        avgDaysDict[key] = daysArray.reduce((a, b) => a + b, 0) / daysArray.length;
+      }
+    }
+
+    // 2. Check current inventory against avgDays
+    setNotifications(prev => {
+      let changed = false;
+      const next = [...prev];
+      const nowTime = Date.now();
+
+      inventory.forEach(item => {
+        const key = item.ingredientKey || item.name;
+        const avgDays = avgDaysDict[key];
+        if (!avgDays) return;
+
+        const daysSinceAdded = (nowTime - new Date(item.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+        
+        // If 80% of average consumption time has passed
+        if (daysSinceAdded >= avgDays * 0.8) {
+          const existing = next.find(n => n.relatedItemId === item.id && n.type === 'system' && n.title.includes('在庫切れ予測'));
+          if (existing) return;
+
+          changed = true;
+          next.push({
+            id: crypto.randomUUID(),
+            type: 'system',
+            severity: 'warning',
+            status: 'active',
+            read: false,
+            title: '在庫切れ予測',
+            message: `${item.name}がそろそろ無くなる頃です。買い物リストに追加しますか？`,
+            relatedType: 'shopping',
+            relatedItemId: item.id,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      });
+
+      return changed ? next : prev;
+    });
+  }, [inventory, consumptions, isLoaded]);
 
   const addNotification = (notification: Omit<AppNotification, 'id' | 'createdAt' | 'read' | 'status'>) => {
     setNotifications(prev => [

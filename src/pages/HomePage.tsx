@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, Clock, Bell, X, Package } from 'lucide-react';
+import { AlertCircle, Clock, Bell, X, Package, Wand2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useInventory } from '../contexts/InventoryContext';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -7,11 +7,12 @@ import { useShoppingList } from '../contexts/ShoppingListContext';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { inventory, getUrgentItems } = useInventory();
+  const { inventory, getUrgentItems, getRescueItems } = useInventory();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
 
   const urgentItems = getUrgentItems();
+  const rescueItems = getRescueItems();
 
   const expiredCount = inventory.filter(i => i.expiryStatus === 'expired').length;
   const warningCount = inventory.filter(i => i.expiryStatus === 'urgent' || i.expiryStatus === 'warning').length;
@@ -39,6 +40,45 @@ const HomePage: React.FC = () => {
           )}
         </button>
       </header>
+
+      {/* Today's Recommendations CTA */}
+      <section>
+        <div 
+          onClick={() => navigate('/recipes')}
+          className="bg-gradient-to-r from-primary-600 to-primary-500 rounded-3xl p-5 shadow-lg cursor-pointer hover:shadow-xl transition-all relative overflow-hidden group"
+        >
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full blur-2xl transform translate-x-1/2 -translate-y-1/2 group-hover:scale-110 transition-transform duration-500"></div>
+          <div className="relative z-10">
+            <div className="flex items-center space-x-2 text-white/90 mb-1">
+              <Wand2 size={16} />
+              <span className="text-xs font-bold uppercase tracking-wider">AI Suggestion</span>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">今日のおすすめ献立</h2>
+            <p className="text-primary-100 text-sm mb-4 leading-relaxed">
+              現在の在庫と過去の消費データから、今日にぴったりのレシピを提案します。
+            </p>
+            
+            {rescueItems.length > 0 && (
+              <div className="bg-white/20 backdrop-blur-md rounded-xl p-3 border border-white/20 inline-block">
+                <div className="flex items-center space-x-2 text-white">
+                  <span className="flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-orange-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                  </span>
+                  <span className="text-xs font-bold">レスキュー提案あり: {rescueItems.map(i => i.name).join(', ')}</span>
+                </div>
+              </div>
+            )}
+            {rescueItems.length === 0 && urgentItems.length > 0 && (
+              <div className="bg-white/20 backdrop-blur-md rounded-xl p-3 border border-white/20 inline-block">
+                <div className="flex items-center space-x-2 text-white">
+                  <span className="text-xs font-bold">期限間近の食材を活用できます: {urgentItems[0].name} 他</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       {/* Dashboard Links */}
       <section className="space-y-3">
