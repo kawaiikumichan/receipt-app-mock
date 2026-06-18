@@ -5,6 +5,7 @@ import ScannerPage from './pages/ScannerPage';
 import InventoryPage from './pages/InventoryPage';
 import RecipesPage from './pages/RecipesPage';
 import ShoppingListPage from './pages/ShoppingListPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 
 function BottomNav() {
   const location = useLocation();
@@ -48,6 +49,7 @@ function App() {
           <Route path="/scanner" element={<ScannerPage />} />
           <Route path="/recipes" element={<RecipesPage />} />
           <Route path="/shopping-list" element={<ShoppingListPage />} />
+          <Route path="/analytics" element={<AnalyticsPage />} />
         </Routes>
       </main>
       <BottomNav />

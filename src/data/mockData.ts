@@ -107,6 +107,19 @@ export interface ShoppingListItem {
   createdAt: string;
 }
 
+export interface ConsumptionRecord {
+  id: string;
+  inventoryItemId?: string;
+  ingredientKey: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  action: 'consumed' | 'wasted';
+  source: 'recipe' | 'manual';
+  wasteReason?: 'expired' | 'spoiled' | 'overpurchase' | 'other';
+  createdAt: string;
+}
+
 export const mockInventory: InventoryItem[] = [
   { 
     id: '1', name: '豚バラ肉', ingredientKey: '豚肉', category: 'meat', quantity: 300, unit: 'g', price: 580,

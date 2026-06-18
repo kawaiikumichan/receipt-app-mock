@@ -1,16 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { mockInventory } from '../data/mockData';
-import type { InventoryItem, Recipe, MealRecord, InventoryConsumption } from '../data/mockData';
+import type { InventoryItem, Recipe, MealRecord, ConsumptionRecord } from '../data/mockData';
 import { getExpiryStatus } from '../utils/expiry';
 
 interface InventoryContextType {
   inventory: InventoryItem[];
-  consumptions: InventoryConsumption[];
+  consumptions: ConsumptionRecord[];
   mealRecords: MealRecord[];
   addItems: (items: Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt' | 'expiryStatus' | 'opened' | 'openedAt'>[]) => void;
   updateItem: (id: string, updates: Partial<InventoryItem>) => void;
   consumeManually: (id: string, quantity: number) => void;
+  consumeOrWasteItem: (id: string, action: 'consumed' | 'wasted', quantityToConsume: number, wasteReason?: 'expired' | 'spoiled' | 'overpurchase' | 'other') => void;
   recordMealAndConsume: (recipe: Recipe, actualServings: number) => void;
   removeItem: (id: string) => void;
   getUrgentItems: () => InventoryItem[];
@@ -20,7 +21,7 @@ const InventoryContext = createContext<InventoryContextType | undefined>(undefin
 
 export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
-  const [consumptions, setConsumptions] = useState<InventoryConsumption[]>([]);
+  const [consumptions, setConsumptions] = useState<ConsumptionRecord[]>([]);
   const [mealRecords, setMealRecords] = useState<MealRecord[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -82,24 +83,34 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const consumeManually = (id: string, quantityToConsume: number) => {
-    let consumedUnit = '';
+    consumeOrWasteItem(id, 'consumed', quantityToConsume);
+  };
+
+  const consumeOrWasteItem = (id: string, action: 'consumed' | 'wasted', quantityToConsume: number, wasteReason?: 'expired' | 'spoiled' | 'overpurchase' | 'other') => {
+    let consumedItem: InventoryItem | undefined;
     setInventory(prev => prev.map(item => {
       if (item.id === id) {
-        consumedUnit = item.unit;
+        consumedItem = { ...item };
         const newQuantity = Math.max(0, item.quantity - quantityToConsume);
         return { ...item, quantity: newQuantity, updatedAt: new Date().toISOString() };
       }
       return item;
     }).filter(item => item.quantity > 0));
     
-    setConsumptions(prev => [...prev, {
-      id: crypto.randomUUID(),
-      inventoryItemId: id,
-      quantity: quantityToConsume,
-      unit: consumedUnit,
-      source: 'manual',
-      createdAt: new Date().toISOString()
-    }]);
+    if (consumedItem) {
+      setConsumptions(prev => [...prev, {
+        id: crypto.randomUUID(),
+        inventoryItemId: id,
+        ingredientKey: consumedItem!.ingredientKey || consumedItem!.name,
+        name: consumedItem!.name,
+        quantity: quantityToConsume,
+        unit: consumedItem!.unit,
+        action,
+        source: 'manual',
+        wasteReason,
+        createdAt: new Date().toISOString()
+      }]);
+    }
   };
 
   const recordMealAndConsume = (recipe: Recipe, actualServings: number) => {
@@ -115,7 +126,7 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     setMealRecords(prev => [...prev, newMeal]);
 
     const ratio = actualServings / recipe.baseServings;
-    const newConsumptions: InventoryConsumption[] = [];
+    const newConsumptions: ConsumptionRecord[] = [];
 
     setInventory(prev => {
       let nextInventory = [...prev];
@@ -130,9 +141,7 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
           (item.category === ri.category)
         ));
 
-        // Sort candidates:
-        // 1. Exact ingredientKey match gets highest priority.
-        // 2. Shortest expiry date (FIFO)
+        // Sort candidates
         candidates.sort((a, b) => {
           const aKeyMatch = a.ingredientKey === ri.ingredientKey;
           const bKeyMatch = b.ingredientKey === ri.ingredientKey;
@@ -145,9 +154,7 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
         });
 
         if (candidates.length > 0) {
-          const target = candidates[0]; // just pick the best one for now
-          // We could split consumption across multiple items if target doesn't have enough, 
-          // but for this MVP, we just subtract from the best match.
+          const target = candidates[0];
           const actualConsumed = Math.min(target.quantity, requiredQuantity);
           
           nextInventory = nextInventory.map(item => 
@@ -157,11 +164,12 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
           newConsumptions.push({
             id: crypto.randomUUID(),
             inventoryItemId: target.id,
+            ingredientKey: target.ingredientKey || target.name,
+            name: target.name,
             quantity: actualConsumed,
             unit: target.unit,
+            action: 'consumed',
             source: 'recipe',
-            recipeId: recipe.id,
-            mealRecordId: mealRecordId,
             createdAt: now
           });
         }
@@ -174,7 +182,13 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const removeItem = (id: string) => {
-    setInventory(prev => prev.filter(item => item.id !== id));
+    // Treat removal as manual waste unless specified otherwise
+    const target = inventory.find(i => i.id === id);
+    if (target) {
+      consumeOrWasteItem(id, 'wasted', target.quantity, 'other');
+    } else {
+      setInventory(prev => prev.filter(item => item.id !== id));
+    }
   };
 
   const getUrgentItems = () => {
@@ -192,7 +206,8 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
       mealRecords,
       addItems, 
       updateItem, 
-      consumeManually, 
+      consumeManually,
+      consumeOrWasteItem, 
       recordMealAndConsume,
       removeItem,
       getUrgentItems

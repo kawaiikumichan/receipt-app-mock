@@ -40,8 +40,8 @@ const HomePage: React.FC = () => {
         </button>
       </header>
 
-      {/* Shopping List Summary */}
-      <section>
+      {/* Dashboard Links */}
+      <section className="space-y-3">
         <div 
           onClick={() => navigate('/shopping-list')}
           className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
@@ -58,6 +58,26 @@ const HomePage: React.FC = () => {
             </div>
           </div>
           <div className="text-gray-400">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+        </div>
+
+        <div 
+          onClick={() => navigate('/analytics')}
+          className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer hover:opacity-90 transition-opacity text-white"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+            </div>
+            <div>
+              <h2 className="font-bold">消費履歴分析</h2>
+              <p className="text-xs opacity-80">
+                これまでのロス率や平均消費日数をチェック
+              </p>
+            </div>
+          </div>
+          <div className="opacity-70">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
           </div>
         </div>

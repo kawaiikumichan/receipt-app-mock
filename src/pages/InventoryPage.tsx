@@ -18,7 +18,7 @@ const categoryLabels: Record<Category, string> = {
 };
 
 const InventoryPage: React.FC = () => {
-  const { inventory, consumeManually, updateItem, addItems } = useInventory();
+  const { inventory, updateItem, addItems } = useInventory();
   const [activeTab, setActiveTab] = useState<'food' | 'daily'>('food');
   const [sortOption, setSortOption] = useState<'expiry' | 'added' | 'category' | 'name'>('expiry');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -34,6 +34,10 @@ const InventoryPage: React.FC = () => {
     estimatedExpiryDate: '',
     actualExpiryDate: ''
   });
+
+  const [actionItem, setActionItem] = useState<{ id: string, name: string, quantity: number, unit: string } | null>(null);
+  const [wasteReasonOpen, setWasteReasonOpen] = useState(false);
+  const [quantityToProcess, setQuantityToProcess] = useState<number>(0);
 
   const filteredInventory = useMemo(() => {
     let items = inventory.filter(item => 
@@ -57,6 +61,26 @@ const InventoryPage: React.FC = () => {
       }
     });
   }, [inventory, activeTab, sortOption]);
+
+  const handleActionClick = (item: { id: string, name: string, quantity: number, unit: string }) => {
+    const input = window.prompt(`「${item.name}」をどれくらい処理しますか？ (単位: ${item.unit})\n現在の在庫: ${item.quantity}${item.unit}`, String(item.quantity));
+    if (input !== null) {
+      const num = parseFloat(input);
+      if (!isNaN(num) && num > 0) {
+        setActionItem(item);
+        setQuantityToProcess(num);
+      }
+    }
+  };
+
+  const processAction = (action: 'consumed' | 'wasted', reason?: 'expired' | 'spoiled' | 'overpurchase' | 'other') => {
+    if (actionItem && quantityToProcess > 0) {
+      useInventory().consumeOrWasteItem(actionItem.id, action, quantityToProcess, reason);
+    }
+    setActionItem(null);
+    setWasteReasonOpen(false);
+    setQuantityToProcess(0);
+  };
 
   return (
     <div className="p-4 h-full flex flex-col">
@@ -115,7 +139,7 @@ const InventoryPage: React.FC = () => {
       <div className="flex-1 overflow-y-auto pb-4 space-y-3">
         {filteredInventory.map(item => (
           <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <div className="flex items-center space-x-2 mb-1">
                 <span className="font-semibold text-gray-900">{item.name}</span>
                 <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
@@ -125,23 +149,15 @@ const InventoryPage: React.FC = () => {
               <div className="text-sm text-gray-500">
                 在庫: {item.quantity}{item.unit}
               </div>
-              <div className="flex justify-between items-center text-sm">
+              <div className="flex justify-between items-center text-sm mt-1">
                 <span className={`font-medium ${item.expiryStatus === 'expired' ? 'text-red-600' : item.expiryStatus === 'urgent' || item.expiryStatus === 'warning' ? 'text-orange-600' : 'text-gray-500'}`}>
                   {item.actualExpiryDate || item.estimatedExpiryDate ? `期限: ${item.actualExpiryDate || item.estimatedExpiryDate}` : ''}
                 </span>
                 <div className="flex gap-2">
                   <button 
-                    onClick={() => {
-                      const input = window.prompt(`「${item.name}」をどれくらい消費しますか？ (単位: ${item.unit})\n現在の在庫: ${item.quantity}${item.unit}`);
-                      if (input !== null) {
-                        const num = parseFloat(input);
-                        if (!isNaN(num) && num > 0) {
-                          consumeManually(item.id, num);
-                        }
-                      }
-                    }}
+                    onClick={() => handleActionClick(item)}
                     className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-95 transition-transform"
-                    title="消費する"
+                    title="消費・廃棄する"
                   >
                     -
                   </button>
@@ -229,7 +245,7 @@ const InventoryPage: React.FC = () => {
             <div className="p-4 border-t border-gray-100 bg-gray-50">
               <button 
                 onClick={() => {
-                  if (!manualItem.name) return alert('商品名を入力してください');
+                  if (!manualItem.name) return alert('食材名を入力してください');
                   addItems([
                     {
                       ...manualItem,
@@ -243,6 +259,61 @@ const InventoryPage: React.FC = () => {
                 className="w-full bg-primary-600 text-white font-bold py-3 rounded-xl hover:bg-primary-700 active:scale-95 transition-transform"
               >
                 登録する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Action Modal (Consume/Waste) */}
+      {actionItem && !wasteReasonOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden p-6 text-center">
+            <h3 className="font-bold text-lg mb-2">この在庫をどう処理しますか？</h3>
+            <p className="text-gray-500 text-sm mb-6">
+              {actionItem.name} ({quantityToProcess}{actionItem.unit})
+            </p>
+            <div className="space-y-3">
+              <button 
+                onClick={() => processAction('consumed')}
+                className="w-full bg-green-500 text-white font-bold py-3 rounded-xl hover:bg-green-600"
+              >
+                使い切った
+              </button>
+              <button 
+                onClick={() => setWasteReasonOpen(true)}
+                className="w-full bg-red-500 text-white font-bold py-3 rounded-xl hover:bg-red-600"
+              >
+                廃棄した
+              </button>
+              <button 
+                onClick={() => setActionItem(null)}
+                className="w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200"
+              >
+                キャンセル
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Waste Reason Modal */}
+      {actionItem && wasteReasonOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden p-6 text-center">
+            <h3 className="font-bold text-lg mb-2">廃棄の理由</h3>
+            <p className="text-gray-500 text-sm mb-6">今後の予測に活用されます</p>
+            <div className="space-y-3">
+              <button onClick={() => processAction('wasted', 'expired')} className="w-full bg-orange-50 text-orange-700 border border-orange-200 font-bold py-3 rounded-xl hover:bg-orange-100">期限切れ</button>
+              <button onClick={() => processAction('wasted', 'spoiled')} className="w-full bg-orange-50 text-orange-700 border border-orange-200 font-bold py-3 rounded-xl hover:bg-orange-100">傷んだ・腐った</button>
+              <button onClick={() => processAction('wasted', 'overpurchase')} className="w-full bg-orange-50 text-orange-700 border border-orange-200 font-bold py-3 rounded-xl hover:bg-orange-100">買いすぎた</button>
+              <button onClick={() => processAction('wasted', 'other')} className="w-full bg-gray-50 text-gray-700 border border-gray-200 font-bold py-3 rounded-xl hover:bg-gray-100">その他</button>
+              
+              <button 
+                onClick={() => setWasteReasonOpen(false)}
+                className="w-full bg-transparent text-gray-500 py-3 mt-2 text-sm"
+              >
+                戻る
               </button>
             </div>
           </div>
