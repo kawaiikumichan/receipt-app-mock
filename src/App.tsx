@@ -4,6 +4,7 @@ import HomePage from './pages/HomePage';
 import ScannerPage from './pages/ScannerPage';
 import InventoryPage from './pages/InventoryPage';
 import RecipesPage from './pages/RecipesPage';
+import ShoppingListPage from './pages/ShoppingListPage';
 
 function BottomNav() {
   const location = useLocation();
@@ -16,7 +17,7 @@ function BottomNav() {
   ];
 
   return (
-    <div className="fixed bottom-0 w-full bg-white border-t border-gray-200 pb-safe">
+    <div className="fixed bottom-0 w-full bg-white border-t border-gray-200 pb-safe z-40">
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -39,13 +40,14 @@ function BottomNav() {
 
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <main className="flex-1 pb-16">
+    <div className="min-h-screen bg-gray-50 flex flex-col relative">
+      <main className="flex-1 pb-16 h-screen overflow-hidden">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/scanner" element={<ScannerPage />} />
           <Route path="/recipes" element={<RecipesPage />} />
+          <Route path="/shopping-list" element={<ShoppingListPage />} />
         </Routes>
       </main>
       <BottomNav />

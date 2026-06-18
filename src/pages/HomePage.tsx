@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { AlertCircle, Clock, Bell, X } from 'lucide-react';
+import { AlertCircle, Clock, Bell, X, Package } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useInventory } from '../contexts/InventoryContext';
 import { useNotifications } from '../contexts/NotificationContext';
+import { useShoppingList } from '../contexts/ShoppingListContext';
 
 const HomePage: React.FC = () => {
+  const navigate = useNavigate();
   const { inventory, getUrgentItems } = useInventory();
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -13,6 +16,9 @@ const HomePage: React.FC = () => {
   const expiredCount = inventory.filter(i => i.expiryStatus === 'expired').length;
   const warningCount = inventory.filter(i => i.expiryStatus === 'urgent' || i.expiryStatus === 'warning').length;
   const totalCount = inventory.length;
+
+  const { items: shoppingItems } = useShoppingList();
+  const pendingShoppingCount = shoppingItems.filter(i => i.status === 'pending').length;
 
   return (
     <div className="p-4 space-y-6 relative h-full">
@@ -33,6 +39,29 @@ const HomePage: React.FC = () => {
           )}
         </button>
       </header>
+
+      {/* Shopping List Summary */}
+      <section>
+        <div 
+          onClick={() => navigate('/shopping-list')}
+          className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Package size={20} />
+            </div>
+            <div>
+              <h2 className="font-bold text-gray-900">買い物リスト</h2>
+              <p className="text-xs text-gray-500">
+                {pendingShoppingCount > 0 ? `買うべきものが ${pendingShoppingCount} 件あります` : '買うべきものはありません'}
+              </p>
+            </div>
+          </div>
+          <div className="text-gray-400">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+        </div>
+      </section>
 
       {/* Summary Cards */}
       <section>

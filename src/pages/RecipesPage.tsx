@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Utensils, Clock, CheckCircle, Wand2, Loader2, AlertCircle } from 'lucide-react';
 import { useInventory } from '../contexts/InventoryContext';
+import { useShoppingList } from '../contexts/ShoppingListContext';
 import { type Recipe } from '../data/mockData';
 
 const RecipesPage: React.FC = () => {
   const { inventory, getUrgentItems, recordMealAndConsume } = useInventory();
+  const { addItems: addShoppingItems } = useShoppingList();
   
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(false);
@@ -145,14 +147,33 @@ const RecipesPage: React.FC = () => {
               <div className="mb-4">
                 <h4 className="text-sm font-semibold text-orange-700 mb-2 border-b pb-1 border-orange-100">買い足しが必要な食材</h4>
                 {recipe.missingIngredients && recipe.missingIngredients.length > 0 ? (
-                  <ul className="text-sm space-y-1">
-                    {recipe.missingIngredients.map((ing, i) => (
-                      <li key={i} className="flex justify-between text-gray-600">
-                        <span>{ing.name} <span className="text-xs text-gray-400">({ing.ingredientKey})</span></span>
-                        <span>{ing.quantity}{ing.unit}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="text-sm space-y-1 mb-3">
+                      {recipe.missingIngredients.map((ing, i) => (
+                        <li key={i} className="flex justify-between text-gray-600">
+                          <span>{ing.name} <span className="text-xs text-gray-400">({ing.ingredientKey})</span></span>
+                          <span>{ing.quantity}{ing.unit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => {
+                        const itemsToAdd = recipe.missingIngredients!.map(ing => ({
+                          name: ing.name,
+                          ingredientKey: ing.ingredientKey,
+                          quantity: ing.quantity,
+                          unit: ing.unit,
+                          priority: 'high' as const,
+                          source: 'recipe' as const
+                        }));
+                        addShoppingItems(itemsToAdd);
+                        alert('不足食材を買い物リストに追加しました！');
+                      }}
+                      className="w-full py-2 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-lg text-sm font-bold transition-colors"
+                    >
+                      不足分を買い物リストに追加
+                    </button>
+                  </>
                 ) : (
                   <p className="text-xs text-green-600 font-medium">すべて在庫で作れます！</p>
                 )}

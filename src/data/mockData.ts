@@ -91,6 +91,22 @@ export interface InventoryConsumption {
   createdAt: string;
 }
 
+export type ShoppingListPriority = 'high' | 'normal' | 'low';
+export type ShoppingListSource = 'recipe' | 'forecast' | 'manual';
+export type ShoppingListStatus = 'pending' | 'purchased' | 'receipt_pending' | 'completed';
+
+export interface ShoppingListItem {
+  id: string;
+  name: string;
+  ingredientKey: string;
+  quantity: number;
+  unit: string;
+  priority: ShoppingListPriority;
+  source: ShoppingListSource;
+  status: ShoppingListStatus;
+  createdAt: string;
+}
+
 export const mockInventory: InventoryItem[] = [
   { 
     id: '1', name: '豚バラ肉', ingredientKey: '豚肉', category: 'meat', quantity: 300, unit: 'g', price: 580,
