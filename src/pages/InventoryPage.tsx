@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { mockInventory, type Category } from '../data/mockData';
+import { useInventory } from '../contexts/InventoryContext';
 import { Plus, Search, Filter } from 'lucide-react';
+import { type Category } from '../data/mockData';
 
 const categoryLabels: Record<Category, string> = {
   meat: 'お肉',
@@ -17,9 +18,10 @@ const categoryLabels: Record<Category, string> = {
 };
 
 const InventoryPage: React.FC = () => {
+  const { inventory } = useInventory();
   const [activeTab, setActiveTab] = useState<'food' | 'daily'>('food');
 
-  const filteredInventory = mockInventory.filter(item => 
+  const filteredInventory = inventory.filter(item => 
     activeTab === 'food' ? item.category !== 'daily' : item.category === 'daily'
   );
 
@@ -75,6 +77,14 @@ const InventoryPage: React.FC = () => {
               </div>
               <div className="text-sm text-gray-500">
                 在庫: {item.quantity}{item.unit}
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500">
+                  {item.actualExpiryDate || item.estimatedExpiryDate ? `期限: ${item.actualExpiryDate || item.estimatedExpiryDate}` : ''}
+                </span>
+                <div className="flex gap-2">
+                  <button className="text-primary-600 hover:text-primary-700 bg-primary-50 px-3 py-1 rounded-full font-medium">消費</button>
+                </div>
               </div>
             </div>
             <div className="flex space-x-2">

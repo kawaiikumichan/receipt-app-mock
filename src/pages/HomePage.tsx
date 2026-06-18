@@ -1,14 +1,20 @@
 import React from 'react';
 import { AlertCircle, Clock, Package } from 'lucide-react';
-import { mockInventory } from '../data/mockData';
+import { useInventory } from '../contexts/InventoryContext';
 
 const HomePage: React.FC = () => {
-  // Mock logic to find soon-to-expire items
-  const soonToExpire = mockInventory.filter(item => {
-    if (!item.expiryDate) return false;
-    const daysUntilExpiry = (new Date(item.expiryDate).getTime() - new Date('2026-06-17').getTime()) / (1000 * 3600 * 24);
+  const { inventory } = useInventory();
+
+  // 賞味期限が3日以内のアイテムを抽出
+  const soonToExpire = inventory.filter(item => {
+    const targetDate = item.actualExpiryDate || item.estimatedExpiryDate;
+    if (!targetDate) return false;
+    const daysUntilExpiry = (new Date(targetDate).getTime() - new Date('2026-06-17').getTime()) / (1000 * 3600 * 24);
     return daysUntilExpiry <= 3;
   });
+
+  const foodItemsCount = inventory.filter(item => item.category !== 'daily').length;
+  const dailyItemsCount = inventory.filter(item => item.category === 'daily').length;
 
   return (
     <div className="p-4 space-y-6">
@@ -30,7 +36,7 @@ const HomePage: React.FC = () => {
                 <span className="font-medium text-gray-800">{item.name}</span>
                 <div className="flex items-center text-red-600 text-sm font-medium">
                   <Clock size={14} className="mr-1" />
-                  <span>{new Date(item.expiryDate!).toLocaleDateString('ja-JP')}</span>
+                  <span>{item.actualExpiryDate || item.estimatedExpiryDate}</span>
                 </div>
               </div>
             ))}
@@ -46,14 +52,14 @@ const HomePage: React.FC = () => {
             <div className="w-12 h-12 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center mb-2">
               <Package size={24} />
             </div>
-            <span className="text-2xl font-bold text-gray-900">{mockInventory.filter(i => i.category !== 'daily').length}</span>
+            <span className="text-2xl font-bold text-gray-900">{foodItemsCount}</span>
             <span className="text-sm text-gray-500">食品アイテム</span>
           </div>
           <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
             <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mb-2">
               <Package size={24} />
             </div>
-            <span className="text-2xl font-bold text-gray-900">{mockInventory.filter(i => i.category === 'daily').length}</span>
+            <span className="text-2xl font-bold text-gray-900">{dailyItemsCount}</span>
             <span className="text-sm text-gray-500">日用品アイテム</span>
           </div>
         </div>

@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Image as ImageIcon, Check, Edit2, X, Camera } from 'lucide-react';
-import { type ParsedReceipt, type Category } from '../data/mockData';
+import { Image as ImageIcon, Check, X, Camera, Plus, Minus } from 'lucide-react';
+import { type ParsedReceipt, type Category, type StorageType, type InventoryItem } from '../data/mockData';
+import { useInventory } from '../contexts/InventoryContext';
+import { useNavigate } from 'react-router-dom';
 
 const categoryLabels: Record<Category, string> = {
   meat: 'お肉',
@@ -19,9 +21,12 @@ const categoryLabels: Record<Category, string> = {
 const ScannerPage: React.FC = () => {
   const [step, setStep] = useState<'camera' | 'processing' | 'confirm'>('camera');
   const [parsedData, setParsedData] = useState<ParsedReceipt | null>(null);
+  const [editableItems, setEditableItems] = useState<Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
+  const { addItems } = useInventory();
+  const navigate = useNavigate();
 
   const handleCaptureClick = () => {
     cameraInputRef.current?.click();
@@ -93,6 +98,20 @@ const ScannerPage: React.FC = () => {
       }
 
       const data: ParsedReceipt = await response.json();
+      
+      const today = new Date().toISOString().split('T')[0];
+      const itemsForEdit = data.items.map(item => ({
+        name: item.name,
+        category: item.category as Category,
+        quantity: item.quantity,
+        unit: item.unit || '個',
+        price: item.price || 0,
+        purchaseDate: today,
+        estimatedExpiryDate: item.expiry_date_estimate || '',
+        actualExpiryDate: '',
+        storageType: (item.category === 'meat' || item.category === 'fish' || item.category === 'dairy' ? 'refrigerated' : 'room') as StorageType
+      }));
+      setEditableItems(itemsForEdit);
       setParsedData(data);
       setStep('confirm');
     } catch (err: any) {
@@ -112,50 +131,110 @@ const ScannerPage: React.FC = () => {
     );
   }
 
+  const handleItemChange = (index: number, field: string, value: any) => {
+    setEditableItems(prev => {
+      const next = [...prev];
+      (next[index] as any)[field] = value;
+      return next;
+    });
+  };
+
+  const handleRegister = () => {
+    addItems(editableItems);
+    navigate('/inventory');
+  };
+
   if (step === 'confirm' && parsedData) {
     return (
-      <div className="p-4 h-full flex flex-col">
+      <div className="p-4 h-full flex flex-col bg-gray-50">
         <header className="pt-4 pb-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-900">読み取り結果</h1>
+          <h1 className="text-xl font-bold text-gray-900">内容の確認・編集</h1>
           <button onClick={() => setStep('camera')} className="text-gray-500 hover:text-gray-700">
             <X size={24} />
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pb-20">
+        <div className="flex-1 overflow-y-auto space-y-4 pb-24">
           <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl text-sm text-blue-800">
-            内容を確認し、必要に応じて修正してください。
+            内容を確認・修正してから登録してください。
             {parsedData.store_name && <div className="mt-1 font-semibold">店舗: {parsedData.store_name}</div>}
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-4">
-            {parsedData.items.map((item, index) => (
-              <div key={index} className="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0 last:pb-0">
-                <div>
-                  <div className="font-semibold text-gray-900 mb-1">{item.name}</div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-xs bg-primary-50 text-primary-600 px-2 py-0.5 rounded-full font-medium cursor-pointer flex items-center">
-                      {categoryLabels[item.category] || item.category} <Edit2 size={10} className="ml-1" />
-                    </span>
-                    {item.expiry_date_estimate && (
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
-                        推定賞味期限: {item.expiry_date_estimate}
-                      </span>
-                    )}
+          <div className="space-y-4">
+            {editableItems.map((item, index) => (
+              <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <input 
+                    type="text" 
+                    value={item.name} 
+                    onChange={e => handleItemChange(index, 'name', e.target.value)}
+                    className="font-semibold text-gray-900 border-b border-gray-200 focus:border-primary-500 focus:outline-none w-1/2 pb-1"
+                  />
+                  <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-1 shrink-0">
+                    <button 
+                      onClick={() => handleItemChange(index, 'quantity', Math.max(0, item.quantity - 1))}
+                      className="w-8 h-8 rounded-md bg-white border border-gray-200 text-gray-600 shadow-sm flex items-center justify-center"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <span className="font-medium w-4 text-center">{item.quantity}</span>
+                    <button 
+                      onClick={() => handleItemChange(index, 'quantity', item.quantity + 1)}
+                      className="w-8 h-8 rounded-md bg-white border border-gray-200 text-gray-600 shadow-sm flex items-center justify-center"
+                    >
+                      <Plus size={16} />
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-3 bg-gray-50 rounded-lg p-1 shrink-0">
-                  <button className="w-8 h-8 rounded-md bg-white border border-gray-200 text-gray-600 shadow-sm">-</button>
-                  <span className="font-medium w-4 text-center">{item.quantity}</span>
-                  <button className="w-8 h-8 rounded-md bg-white border border-gray-200 text-gray-600 shadow-sm">+</button>
+                
+                <div className="flex gap-2 text-sm">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">カテゴリ</label>
+                    <select 
+                      value={item.category} 
+                      onChange={e => handleItemChange(index, 'category', e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary-500"
+                    >
+                      {Object.entries(categoryLabels).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">保存場所</label>
+                    <select 
+                      value={item.storageType} 
+                      onChange={e => handleItemChange(index, 'storageType', e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary-500"
+                    >
+                      <option value="refrigerated">冷蔵</option>
+                      <option value="frozen">冷凍</option>
+                      <option value="room">常温</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 text-sm">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">推定賞味期限</label>
+                    <input 
+                      type="date" 
+                      value={item.estimatedExpiryDate} 
+                      onChange={e => handleItemChange(index, 'estimatedExpiryDate', e.target.value)}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-primary-500"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="fixed bottom-20 left-0 w-full px-4">
-          <button className="w-full bg-primary-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-primary-700 flex items-center justify-center active:scale-95 transition-transform">
+        <div className="fixed bottom-20 left-0 w-full px-4 bg-gradient-to-t from-gray-50 via-gray-50 to-transparent pt-4 pb-2">
+          <button 
+            onClick={handleRegister}
+            className="w-full bg-primary-600 text-white font-bold py-3.5 rounded-xl shadow-lg hover:bg-primary-700 flex items-center justify-center active:scale-95 transition-transform"
+          >
             <Check size={20} className="mr-2" />
             在庫に登録する
           </button>
