@@ -31,6 +31,41 @@ const ScannerPage: React.FC = () => {
     libraryInputRef.current?.click();
   };
 
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          const MAX_DIMENSION = 1200;
+          if (width > height && width > MAX_DIMENSION) {
+            height *= MAX_DIMENSION / width;
+            width = MAX_DIMENSION;
+          } else if (height > MAX_DIMENSION) {
+            width *= MAX_DIMENSION / height;
+            height = MAX_DIMENSION;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('Canvas context not available'));
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = () => reject(new Error('画像の読み込みに失敗しました'));
+      };
+      reader.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+    });
+  };
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -39,33 +74,27 @@ const ScannerPage: React.FC = () => {
     setError(null);
 
     try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
-        const base64 = reader.result as string;
-        
-        const response = await fetch('/api/parse-receipt', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ imageBase64: base64 })
-        });
+      const base64 = await compressImage(file);
+      
+      const response = await fetch('/api/parse-receipt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ imageBase64: base64 })
+      });
 
-        if (!response.ok) {
-          throw new Error('読み取りに失敗しました。');
-        }
+      if (!response.ok) {
+        const errData = await response.json().catch(() => null);
+        throw new Error(errData?.error || errData?.details || 'サーバーエラーが発生しました。');
+      }
 
-        const data: ParsedReceipt = await response.json();
-        setParsedData(data);
-        setStep('confirm');
-      };
-      reader.onerror = () => {
-        throw new Error('ファイルの読み込みに失敗しました。');
-      };
+      const data: ParsedReceipt = await response.json();
+      setParsedData(data);
+      setStep('confirm');
     } catch (err: any) {
       console.error(err);
-      setError(err.message);
+      setError(err.message || 'エラーが発生しました');
       setStep('camera');
     }
   };
