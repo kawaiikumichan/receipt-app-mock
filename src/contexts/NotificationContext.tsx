@@ -60,9 +60,9 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
       inventory.forEach(item => {
         if (!item.expiryStatus || item.expiryStatus === 'safe') return;
         
-        // Ensure only one unread expiry notification per item exists
-        const existingUnread = next.find(n => n.itemId === item.id && n.type === 'expiry' && !n.read);
-        if (existingUnread) return; // already notified
+        // Ensure we only notify once per expiry status for a specific item
+        const existingSameStatus = next.find(n => n.itemId === item.id && n.type === 'expiry' && n.severity === item.expiryStatus);
+        if (existingSameStatus) return; // already notified for this specific severity state
 
         let message = '';
         if (item.expiryStatus === 'expired') {

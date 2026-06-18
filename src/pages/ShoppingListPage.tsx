@@ -106,7 +106,7 @@ const ShoppingListPage: React.FC = () => {
       </div>
 
       <button 
-        className="fixed bottom-6 right-4 w-14 h-14 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-primary-700 active:scale-95 transition-all z-20"
+        className="fixed bottom-20 right-4 w-14 h-14 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-primary-700 active:scale-95 transition-all z-20"
         title="手動で買い物リストに追加"
       >
         <Plus size={24} />
