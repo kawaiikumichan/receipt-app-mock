@@ -86,7 +86,10 @@ const ScannerPage: React.FC = () => {
 
       if (!response.ok) {
         const errData = await response.json().catch(() => null);
-        throw new Error(errData?.error || errData?.details || 'サーバーエラーが発生しました。');
+        const errorMessage = errData?.details 
+          ? `${errData.error}: ${errData.details}` 
+          : (errData?.error || 'サーバーエラーが発生しました。');
+        throw new Error(errorMessage);
       }
 
       const data: ParsedReceipt = await response.json();
