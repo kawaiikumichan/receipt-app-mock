@@ -118,7 +118,7 @@ export const InventoryProvider: React.FC<{ children: ReactNode }> = ({ children 
     setInventory(prev => {
       let nextInventory = [...prev];
 
-      recipe.ingredients.forEach(ri => {
+      recipe.availableIngredients.forEach(ri => {
         const requiredQuantity = ri.quantity * ratio;
         
         // Match candidates

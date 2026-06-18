@@ -62,8 +62,13 @@ export interface Recipe {
   image: string;
   time: number;
   matchScore: number;
+  wasteReductionScore: number;
+  inventoryUsageScore: number;
+  shoppingNeedScore: number;
+  reason: string;
   baseServings: number;
-  ingredients: RecipeIngredient[];
+  availableIngredients: RecipeIngredient[];
+  missingIngredients: RecipeIngredient[];
 }
 
 export interface MealRecord {
@@ -125,11 +130,16 @@ export const mockRecipes: Recipe[] = [
     image: 'https://images.unsplash.com/photo-1544378730-1b510107297e?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
     time: 15,
     matchScore: 100,
+    wasteReductionScore: 90,
+    inventoryUsageScore: 100,
+    shoppingNeedScore: 0,
+    reason: '賞味期限が近い豚肉とキャベツを優先的に消費できます。',
     baseServings: 2,
-    ingredients: [
+    availableIngredients: [
       { ingredientKey: '豚肉', name: '豚肉（薄切り）', quantity: 150, unit: 'g', category: 'meat' },
       { ingredientKey: 'キャベツ', name: 'キャベツ', quantity: 0.25, unit: '玉', category: 'vegetable' }
-    ]
+    ],
+    missingIngredients: []
   },
   {
     id: 'r2',
@@ -138,10 +148,16 @@ export const mockRecipes: Recipe[] = [
     image: 'https://images.unsplash.com/photo-1614548483832-6899b1a5105d?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60',
     time: 20,
     matchScore: 80,
+    wasteReductionScore: 70,
+    inventoryUsageScore: 80,
+    shoppingNeedScore: 20,
+    reason: '在庫の卵と玉ねぎを使えます。鶏肉のみ買い足しが必要です。',
     baseServings: 2,
-    ingredients: [
+    availableIngredients: [
       { ingredientKey: '卵', name: '卵', quantity: 4, unit: '個', category: 'dairy' },
-      { ingredientKey: '玉ねぎ', name: '玉ねぎ', quantity: 0.5, unit: '個', category: 'vegetable' },
+      { ingredientKey: '玉ねぎ', name: '玉ねぎ', quantity: 0.5, unit: '個', category: 'vegetable' }
+    ],
+    missingIngredients: [
       { ingredientKey: '鶏肉', name: '鶏肉', quantity: 150, unit: 'g', category: 'meat' }
     ]
   }
