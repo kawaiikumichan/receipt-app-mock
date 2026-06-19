@@ -18,7 +18,7 @@ const categoryLabels: Record<Category, string> = {
 };
 
 const InventoryPage: React.FC = () => {
-  const { inventory, updateItem, addItems } = useInventory();
+  const { inventory, updateItem, addItems, consumeOrWasteItem } = useInventory();
   const [activeTab, setActiveTab] = useState<'food' | 'daily'>('food');
   const [sortOption, setSortOption] = useState<'expiry' | 'added' | 'category' | 'name'>('expiry');
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -75,7 +75,7 @@ const InventoryPage: React.FC = () => {
 
   const processAction = (action: 'consumed' | 'wasted', reason?: 'expired' | 'spoiled' | 'overpurchase' | 'other') => {
     if (actionItem && quantityToProcess > 0) {
-      useInventory().consumeOrWasteItem(actionItem.id, action, quantityToProcess, reason);
+      consumeOrWasteItem(actionItem.id, action, quantityToProcess, reason);
     }
     setActionItem(null);
     setWasteReasonOpen(false);
