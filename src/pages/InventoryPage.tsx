@@ -23,11 +23,12 @@ const InventoryPage: React.FC = () => {
   const [sortOption, setSortOption] = useState<'expiry' | 'added' | 'category' | 'name'>('expiry');
   const [isSortOpen, setIsSortOpen] = useState(false);
   const [isManualAddOpen, setIsManualAddOpen] = useState(false);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [manualItem, setManualItem] = useState({
     name: '',
     ingredientKey: '',
     category: 'vegetable' as Category,
-    quantity: 1,
+    quantity: 1 as number | string,
     unit: '個',
     price: 0,
     storageType: 'refrigerated' as StorageType,
@@ -73,6 +74,22 @@ const InventoryPage: React.FC = () => {
     }
   };
 
+  const openEditModal = (item: any) => {
+    setEditingItemId(item.id);
+    setManualItem({
+      name: item.name,
+      ingredientKey: item.ingredientKey || item.name,
+      category: item.category,
+      quantity: item.quantity,
+      unit: item.unit,
+      price: item.price || 0,
+      storageType: item.storageType,
+      estimatedExpiryDate: item.estimatedExpiryDate || '',
+      actualExpiryDate: item.actualExpiryDate || ''
+    });
+    setIsManualAddOpen(true);
+  };
+
   const processAction = (action: 'consumed' | 'wasted', reason?: 'expired' | 'spoiled' | 'overpurchase' | 'other') => {
     if (actionItem && quantityToProcess > 0) {
       consumeOrWasteItem(actionItem.id, action, quantityToProcess, reason);
@@ -95,7 +112,7 @@ const InventoryPage: React.FC = () => {
             </div>
             <input 
               type="text" 
-              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm shadow-sm" 
+              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-base shadow-sm" 
               placeholder="検索..." 
             />
           </div>
@@ -138,7 +155,11 @@ const InventoryPage: React.FC = () => {
       {/* Inventory List */}
       <div className="flex-1 overflow-y-auto pb-4 space-y-3">
         {filteredInventory.map(item => (
-          <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+          <div key={item.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between cursor-pointer hover:border-primary-300 transition-colors" onClick={(e) => {
+            // Prevent opening modal if clicking on the + / - buttons
+            if ((e.target as HTMLElement).closest('button')) return;
+            openEditModal(item);
+          }}>
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-1">
                 <span className="font-semibold text-gray-900">{item.name}</span>
@@ -155,14 +176,15 @@ const InventoryPage: React.FC = () => {
                 </span>
                 <div className="flex gap-2">
                   <button 
-                    onClick={() => handleActionClick(item)}
+                    onClick={(e) => { e.stopPropagation(); handleActionClick(item); }}
                     className="w-10 h-10 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 active:scale-95 transition-transform"
                     title="消費・廃棄する"
                   >
                     -
                   </button>
                   <button 
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       const input = window.prompt(`「${item.name}」をどれくらい追加しますか？ (単位: ${item.unit})\n現在の在庫: ${item.quantity}${item.unit}`);
                       if (input !== null) {
                         const num = parseFloat(input);
@@ -185,19 +207,23 @@ const InventoryPage: React.FC = () => {
 
       {/* Floating Action Button */}
       <button 
-        onClick={() => setIsManualAddOpen(true)}
+        onClick={() => {
+          setEditingItemId(null);
+          setManualItem({ name: '', ingredientKey: '', category: 'vegetable', quantity: 1, unit: '個', price: 0, storageType: 'refrigerated', estimatedExpiryDate: '', actualExpiryDate: '' });
+          setIsManualAddOpen(true);
+        }}
         className="fixed bottom-20 right-4 w-14 h-14 bg-primary-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-primary-700 active:scale-95 transition-all"
         title="手動で追加"
       >
         <Plus size={24} />
       </button>
 
-      {/* Manual Add Modal */}
+      {/* Manual Add / Edit Modal */}
       {isManualAddOpen && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center p-4">
           <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
             <header className="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h2 className="font-bold text-gray-900">手動で食材を追加</h2>
+              <h2 className="font-bold text-gray-900">{editingItemId ? '食材の編集' : '手動で食材を追加'}</h2>
               <button onClick={() => setIsManualAddOpen(false)} className="text-gray-500 hover:text-gray-700 p-1">
                 <X size={20} />
               </button>
@@ -206,12 +232,12 @@ const InventoryPage: React.FC = () => {
             <div className="p-4 overflow-y-auto flex-1 space-y-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">商品名</label>
-                <input type="text" value={manualItem.name} onChange={e => setManualItem({...manualItem, name: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500" placeholder="例: キャベツ" />
+                <input type="text" value={manualItem.name} onChange={e => setManualItem({...manualItem, name: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:border-primary-500" placeholder="例: キャベツ" />
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs text-gray-500 mb-1">カテゴリ</label>
-                  <select value={manualItem.category} onChange={e => setManualItem({...manualItem, category: e.target.value as Category})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500">
+                  <select value={manualItem.category} onChange={e => setManualItem({...manualItem, category: e.target.value as Category})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:border-primary-500">
                     {Object.entries(categoryLabels).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
                     ))}
@@ -219,7 +245,7 @@ const InventoryPage: React.FC = () => {
                 </div>
                 <div className="flex-1">
                   <label className="block text-xs text-gray-500 mb-1">保存場所</label>
-                  <select value={manualItem.storageType} onChange={e => setManualItem({...manualItem, storageType: e.target.value as StorageType})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500">
+                  <select value={manualItem.storageType} onChange={e => setManualItem({...manualItem, storageType: e.target.value as StorageType})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:border-primary-500">
                     <option value="refrigerated">冷蔵</option>
                     <option value="frozen">冷凍</option>
                     <option value="room">常温</option>
@@ -229,16 +255,16 @@ const InventoryPage: React.FC = () => {
               <div className="flex gap-3">
                 <div className="w-1/2">
                   <label className="block text-xs text-gray-500 mb-1">数量</label>
-                  <input type="number" step="0.1" value={manualItem.quantity} onChange={e => setManualItem({...manualItem, quantity: parseFloat(e.target.value) || 0})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500" />
+                  <input type="number" step="0.1" value={manualItem.quantity} onChange={e => setManualItem({...manualItem, quantity: e.target.value === '' ? '' : parseFloat(e.target.value)})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:border-primary-500" />
                 </div>
                 <div className="w-1/2">
                   <label className="block text-xs text-gray-500 mb-1">単位</label>
-                  <input type="text" value={manualItem.unit} onChange={e => setManualItem({...manualItem, unit: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500" placeholder="個, g, 本 etc" />
+                  <input type="text" value={manualItem.unit} onChange={e => setManualItem({...manualItem, unit: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:border-primary-500" placeholder="個, g, 本 etc" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">期限 (任意)</label>
-                <input type="date" value={manualItem.estimatedExpiryDate} onChange={e => setManualItem({...manualItem, estimatedExpiryDate: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-500" />
+                <input type="date" value={manualItem.estimatedExpiryDate} onChange={e => setManualItem({...manualItem, estimatedExpiryDate: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:border-primary-500" />
               </div>
             </div>
 
@@ -246,19 +272,28 @@ const InventoryPage: React.FC = () => {
               <button 
                 onClick={() => {
                   if (!manualItem.name) return alert('食材名を入力してください');
-                  addItems([
-                    {
+                  const finalQuantity = typeof manualItem.quantity === 'number' ? manualItem.quantity : parseFloat(manualItem.quantity) || 0;
+                  
+                  if (editingItemId) {
+                    updateItem(editingItemId, {
                       ...manualItem,
-                      ingredientKey: manualItem.name, // Simplified for manual add
-                      purchaseDate: new Date().toISOString().split('T')[0]
-                    }
-                  ]);
+                      quantity: finalQuantity
+                    });
+                  } else {
+                    addItems([
+                      {
+                        ...manualItem,
+                        quantity: finalQuantity,
+                        ingredientKey: manualItem.name, // Simplified for manual add
+                        purchaseDate: new Date().toISOString().split('T')[0]
+                      }
+                    ]);
+                  }
                   setIsManualAddOpen(false);
-                  setManualItem({ name: '', ingredientKey: '', category: 'vegetable', quantity: 1, unit: '個', price: 0, storageType: 'refrigerated', estimatedExpiryDate: '', actualExpiryDate: '' });
                 }}
                 className="w-full bg-primary-600 text-white font-bold py-3 rounded-xl hover:bg-primary-700 active:scale-95 transition-transform"
               >
-                登録する
+                {editingItemId ? '保存する' : '登録する'}
               </button>
             </div>
           </div>
