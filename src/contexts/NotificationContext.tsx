@@ -93,118 +93,88 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
     });
   }, [inventory, isLoaded]);
 
-  // Auto-generate expiry notifications
+  // Daily Digest Notification
   useEffect(() => {
     if (!isLoaded || inventory.length === 0) return;
 
     setNotifications(prev => {
-      let changed = false;
-      const next = [...prev];
+      const today = new Date().toLocaleDateString('ja-JP'); // e.g. "2026/6/20"
+      
+      // Check if we already generated a digest today
+      const alreadyGeneratedToday = prev.some(n => 
+        n.type === 'system' && 
+        n.title === `本日のお知らせ (${today})`
+      );
 
-      inventory.forEach(item => {
-        if (!item.expiryStatus || item.expiryStatus === 'safe') return;
-        
-        // Ensure we only notify once per expiry status for a specific item
-        // Check for active or resolved notifications to prevent spamming
-        const existingSameStatus = next.find(n => n.relatedItemId === item.id && n.type === 'expiry' && n.severity === item.expiryStatus);
-        if (existingSameStatus) return; // already notified for this specific severity state
+      if (alreadyGeneratedToday) return prev;
 
-        let message = '';
-        let title = '';
-        if (item.expiryStatus === 'expired') {
-          title = '期限目安越えのお知らせ';
-          message = `${item.name}の期限目安を過ぎています。状態を確認の上、早めのご利用をおすすめします。`;
-        } else if (item.expiryStatus === 'urgent') {
-          title = 'お早めにどうぞ';
-          message = `${item.name}の期限目安が明日までです。お早めのご利用をおすすめします。`;
-        } else if (item.expiryStatus === 'warning') {
-          title = '期限目安が近づいています';
-          message = `${item.name}の期限目安が近づいています（残り3日以内）。`;
+      // Calculate stockout predictions
+      const itemDays: Record<string, number[]> = {};
+      consumptions.filter(c => c.action === 'consumed' && c.inventoryItemId).forEach(c => {
+        const invItem = inventory.find(i => i.id === c.inventoryItemId);
+        if (invItem) {
+          const days = (new Date(c.createdAt).getTime() - new Date(invItem.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+          if (days > 0) {
+            if (!itemDays[c.ingredientKey]) itemDays[c.ingredientKey] = [];
+            itemDays[c.ingredientKey].push(days);
+          }
         }
-
-        // Expiry notifications expire in 7 days
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
-
-        changed = true;
-        next.push({
-          id: crypto.randomUUID(),
-          type: 'expiry',
-          severity: item.expiryStatus,
-          status: 'active',
-          read: false,
-          title,
-          message,
-          relatedType: 'inventory',
-          relatedItemId: item.id,
-          createdAt: new Date().toISOString(),
-          expiresAt: expiresAt.toISOString(),
-        });
       });
 
-      return changed ? next : prev;
-    });
-  }, [inventory, isLoaded]);
-
-  // Auto-generate stockout predictions (Step 8)
-  useEffect(() => {
-    if (!isLoaded || inventory.length === 0 || consumptions.length === 0) return;
-
-    // 1. Calculate avg consumption days for each ingredientKey
-    const itemDays: Record<string, number[]> = {};
-    consumptions.filter(c => c.action === 'consumed' && c.inventoryItemId).forEach(c => {
-      const invItem = inventory.find(i => i.id === c.inventoryItemId);
-      if (invItem) {
-        const days = (new Date(c.createdAt).getTime() - new Date(invItem.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-        if (days > 0) {
-          if (!itemDays[c.ingredientKey]) itemDays[c.ingredientKey] = [];
-          itemDays[c.ingredientKey].push(days);
+      const avgDaysDict: Record<string, number> = {};
+      for (const [key, daysArray] of Object.entries(itemDays)) {
+        if (daysArray.length >= 1) {
+          avgDaysDict[key] = daysArray.reduce((a, b) => a + b, 0) / daysArray.length;
         }
       }
-    });
 
-    const avgDaysDict: Record<string, number> = {};
-    for (const [key, daysArray] of Object.entries(itemDays)) {
-      if (daysArray.length >= 1) { // Require at least 1 record for prediction
-        avgDaysDict[key] = daysArray.reduce((a, b) => a + b, 0) / daysArray.length;
-      }
-    }
+      let expiredCount = 0;
+      let urgentCount = 0;
+      let warningCount = 0;
+      let stockoutCount = 0;
 
-    // 2. Check current inventory against avgDays
-    setNotifications(prev => {
-      let changed = false;
-      const next = [...prev];
       const nowTime = Date.now();
 
       inventory.forEach(item => {
+        if (item.expiryStatus === 'expired') expiredCount++;
+        else if (item.expiryStatus === 'urgent') urgentCount++;
+        else if (item.expiryStatus === 'warning') warningCount++;
+
         const key = item.ingredientKey || item.name;
         const avgDays = avgDaysDict[key];
-        if (!avgDays) return;
-
-        const daysSinceAdded = (nowTime - new Date(item.createdAt).getTime()) / (1000 * 60 * 60 * 24);
-        
-        // If 80% of average consumption time has passed
-        if (daysSinceAdded >= avgDays * 0.8) {
-          const existing = next.find(n => n.relatedItemId === item.id && n.type === 'system' && n.title.includes('在庫切れ予測'));
-          if (existing) return;
-
-          changed = true;
-          next.push({
-            id: crypto.randomUUID(),
-            type: 'system',
-            severity: 'warning',
-            status: 'active',
-            read: false,
-            title: '在庫切れ予測',
-            message: `${item.name}がそろそろ無くなる頃です。買い物リストに追加しますか？`,
-            relatedType: 'shopping',
-            relatedItemId: item.id,
-            createdAt: new Date().toISOString(),
-          });
+        if (avgDays) {
+          const daysSinceAdded = (nowTime - new Date(item.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+          if (daysSinceAdded >= avgDays * 0.8) {
+            stockoutCount++;
+          }
         }
       });
 
-      return changed ? next : prev;
+      if (expiredCount === 0 && urgentCount === 0 && warningCount === 0 && stockoutCount === 0) {
+        return prev;
+      }
+
+      const lines = [];
+      if (expiredCount > 0) lines.push(`・期限目安越え: ${expiredCount}件`);
+      if (urgentCount > 0) lines.push(`・期限間近 (明日まで): ${urgentCount}件`);
+      if (warningCount > 0) lines.push(`・期限注意 (3日以内): ${warningCount}件`);
+      if (stockoutCount > 0) lines.push(`・在庫切れ予測: ${stockoutCount}件`);
+
+      const next = [...prev];
+      next.push({
+        id: crypto.randomUUID(),
+        type: 'system',
+        severity: expiredCount > 0 ? 'expired' : urgentCount > 0 ? 'urgent' : warningCount > 0 ? 'warning' : 'safe',
+        status: 'active',
+        read: false,
+        title: `本日のお知らせ (${today})`,
+        message: `在庫の確認をお願いします！\n${lines.join('\n')}`,
+        relatedType: 'inventory',
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // expires in 1 day
+      });
+
+      return next;
     });
   }, [inventory, consumptions, isLoaded]);
 

@@ -204,7 +204,7 @@ const HomePage: React.FC = () => {
                       <span className="text-xs text-gray-400">{new Date(n.createdAt).toLocaleDateString()}</span>
                     </div>
                     {n.title && <p className={`text-sm mb-1 ${n.read ? 'text-gray-700 font-semibold' : 'text-gray-900 font-bold'}`}>{n.title}</p>}
-                    <p className={`text-xs ${n.read ? 'text-gray-500' : 'text-gray-700 font-medium'}`}>{n.message}</p>
+                    <p className={`text-xs whitespace-pre-wrap ${n.read ? 'text-gray-500' : 'text-gray-700 font-medium'}`}>{n.message}</p>
                   </div>
                 ))
               )}
@@ -226,7 +226,7 @@ const HomePage: React.FC = () => {
                       </span>
                     </div>
                     {n.title && <p className="text-sm font-semibold text-gray-600 mb-1">{n.title}</p>}
-                    <p className="text-xs text-gray-500">{n.message}</p>
+                    <p className="text-xs text-gray-500 whitespace-pre-wrap">{n.message}</p>
                   </div>
                 ))
               )}
