@@ -239,6 +239,11 @@ const InventoryPage: React.FC = () => {
                 <label className="block text-xs text-gray-500 mb-1">商品名</label>
                 <input type="text" value={manualItem.name} onChange={e => setManualItem({...manualItem, name: e.target.value})} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-base focus:outline-none focus:border-primary-500" placeholder="例: キャベツ" />
               </div>
+              <div>
+                <label className="block text-xs text-primary-600 mb-1">献立AI用の食材名（推測）</label>
+                <input type="text" value={manualItem.ingredientKey} onChange={e => setManualItem({...manualItem, ingredientKey: e.target.value})} className="w-full border border-primary-200 bg-primary-50/30 rounded-lg px-3 py-2 text-base focus:outline-none focus:border-primary-500" placeholder="例: キャベツ" />
+                <p className="text-[10px] text-gray-500 mt-1">献立提案やレスキュー判定に使われます。</p>
+              </div>
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs text-gray-500 mb-1">カテゴリ</label>
@@ -289,7 +294,7 @@ const InventoryPage: React.FC = () => {
                       {
                         ...manualItem,
                         quantity: finalQuantity,
-                        ingredientKey: manualItem.name, // Simplified for manual add
+                        ingredientKey: manualItem.ingredientKey || manualItem.name,
                         purchaseDate: new Date().toISOString().split('T')[0]
                       }
                     ]);
