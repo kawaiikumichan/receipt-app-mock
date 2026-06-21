@@ -163,6 +163,11 @@ const InventoryPage: React.FC = () => {
             <div className="flex-1">
               <div className="flex items-center space-x-2 mb-1">
                 <span className="font-semibold text-gray-900">{item.name}</span>
+                {item.ingredientKey && item.ingredientKey !== item.name && (
+                  <span className="text-xs text-gray-500 font-medium bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100">
+                    {item.ingredientKey}
+                  </span>
+                )}
                 <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
                   {categoryLabels[item.category]}
                 </span>
