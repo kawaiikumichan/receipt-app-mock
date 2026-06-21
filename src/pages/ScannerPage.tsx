@@ -150,7 +150,7 @@ const ScannerPage: React.FC = () => {
   const handleItemChange = (index: number, field: string, value: any) => {
     setEditableItems(prev => {
       const next = [...prev];
-      (next[index] as any)[field] = value;
+      next[index] = { ...next[index], [field]: value };
       return next;
     });
   };
