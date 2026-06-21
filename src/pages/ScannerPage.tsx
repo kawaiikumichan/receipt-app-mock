@@ -100,18 +100,33 @@ const ScannerPage: React.FC = () => {
       const data: ParsedReceipt = await response.json();
       
       const today = new Date().toISOString().split('T')[0];
-      const itemsForEdit = data.items.map(item => ({
-        name: item.name,
-        ingredientKey: item.ingredientKey || item.name,
-        category: item.category as Category,
-        quantity: item.quantity,
-        unit: item.unit || '個',
-        price: item.price || 0,
-        purchaseDate: today,
-        estimatedExpiryDate: item.expiry_date_estimate || '',
-        actualExpiryDate: '',
-        storageType: (item.category === 'meat' || item.category === 'fish' || item.category === 'dairy' ? 'refrigerated' : 'room') as StorageType
-      }));
+      const itemsForEdit = data.items.map(item => {
+        let expiry = item.expiry_date_estimate || '';
+        const match = expiry.match(/20\d{2}[-\/]\d{1,2}[-\/]\d{1,2}/);
+        if (match) {
+          const dateObj = new Date(match[0].replace(/\//g, '-'));
+          if (!isNaN(dateObj.getTime())) {
+            expiry = dateObj.toISOString().split('T')[0];
+          } else {
+            expiry = '';
+          }
+        } else {
+          expiry = '';
+        }
+
+        return {
+          name: item.name,
+          ingredientKey: item.ingredientKey || item.name,
+          category: item.category as Category,
+          quantity: item.quantity,
+          unit: item.unit || '個',
+          price: item.price || 0,
+          purchaseDate: today,
+          estimatedExpiryDate: expiry,
+          actualExpiryDate: '',
+          storageType: (item.category === 'meat' || item.category === 'fish' || item.category === 'dairy' ? 'refrigerated' : 'room') as StorageType
+        };
+      });
       setEditableItems(itemsForEdit);
       setParsedData(data);
       setStep('confirm');
